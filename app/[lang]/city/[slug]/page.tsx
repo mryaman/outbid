@@ -19,12 +19,14 @@ import { CITY } from "@/lib/i18n/city";
 import { ROW_LABELS } from "@/lib/i18n/row";
 import { countryName } from "@/lib/i18n/geo";
 import { bidLabels, submitLabels } from "@/lib/i18n/labels";
+import { FREE } from "@/lib/i18n/free";
 import { breadcrumbLd, cityLd, faqLd, leaderboardLd, organizationLd } from "@/lib/seo";
 import Jsonld from "@/components/Jsonld";
 import Nav from "@/components/Nav";
 import Row from "@/components/Row";
 import BidForm from "@/components/BidForm";
 import SubmitForm from "@/components/SubmitForm";
+import FreeClaimForm from "@/components/FreeClaimForm";
 import CityGlobe from "@/components/CityGlobe";
 import Banner from "@/components/Banner";
 import Faq from "@/components/Faq";
@@ -100,6 +102,9 @@ export default async function LocalizedCityPage({
   const flag = flagOf(city.cc);
   const topCents = board[0]?.effective_cents ?? 0;
   const takeTop = Math.max(CONFIG.minBidCents, topCents + 1);
+  // Şehirde canlı kayıt yoksa ilk sıra ücretsiz — sunucu (claim_free_city)
+  // aynı koşulu yeniden kontrol ediyor, burası sadece arayüz.
+  const freeCity = board.length === 0;
 
   const globeCities: GlobeCity[] = [
     ...league.slice(0, 120).map((x) => ({
@@ -200,7 +205,9 @@ export default async function LocalizedCityPage({
         <p
           className="lede"
           dangerouslySetInnerHTML={{
-            __html: board.length > 0 ? fill(c.cityLede, vars) : fill(c.cityLedeEmpty, vars),
+            __html: board.length > 0
+              ? fill(c.cityLede, vars)
+              : FREE[l].intro.replace("{city}", city.name),
           }}
         />
 
@@ -226,7 +233,29 @@ export default async function LocalizedCityPage({
 
       <section className="founding" id="bid">
         <span className="pill">{city.name}</span>
-        {CONFIG.phase === "paid" ? (
+        {freeCity ? (
+          <>
+            <FreeClaimForm
+              cityId={city.id}
+              cityName={city.name}
+              labels={FREE[l]}
+              credit={CONFIG.freeFirstCents}
+              placeholder={t.formLinkPlaceholder}
+            />
+            {CONFIG.phase === "paid" && (
+              <details className="alt-bid">
+                <summary>{FREE[l].orBid}</summary>
+                <BidForm
+                  cityId={city.id}
+                  cityName={city.name}
+                  topCents={topCents}
+                  labels={bidLabels(l)}
+                  locale={l}
+                />
+              </details>
+            )}
+          </>
+        ) : CONFIG.phase === "paid" ? (
           <>
             <p>{fill(c.steps[1], vars)}</p>
             <BidForm
@@ -243,12 +272,12 @@ export default async function LocalizedCityPage({
             <SubmitForm cityId={city.id} cityName={city.name} labels={submitLabels(l)} />
           </>
         )}
-        <p className="fine">{t.bidFine}</p>
+        {!freeCity && <p className="fine">{t.bidFine}</p>}
       </section>
 
       <section className="board" aria-label={fill(c.cityMetaTitle, vars)}>
         {board.length === 0 ? (
-          <p className="empty">{fill(c.cityBoardEmpty, vars)}</p>
+          <p className="empty">{FREE[l].boardEmpty.replace("{city}", city.name)}</p>
         ) : (
           board.map((r, i) => (
             <Row
