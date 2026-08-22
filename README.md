@@ -1,11 +1,25 @@
 # outbid.love
 
-Çürüyen bid mekaniğiyle çalışan sıralama tablosu.
+Dünyanın şehir sıralaması. Her şehrin kendi #1'i var: kendi şehrini seç,
+X / TikTok / Instagram / LinkedIn / YouTube / GitHub profilini ya da kendi
+linkini koy, ödediğin tutar o şehirdeki sıranı belirlesin. Şehirler de
+kendi aralarında toplam etkin harcamaya göre sıralanıyor — en kalabalıktan
+en sessize doğru bir **şehirler ligi**.
 
-**Kuruluş fazı:** ödeme kapalı. İlk 30 kayıt ücretsiz ve herkes $10 çürüyen
-kredi ile başlıyor. Sıralamayı belirleyen tek şey etkin tutar; her ödeme kendi
-tarihinden itibaren günde %10 eriyor — **cron job yok**, çürüme okuma anında
-SQL'de hesaplanıyor.
+Sıralamayı belirleyen tek şey etkin tutar; her ödeme kendi tarihinden
+itibaren günde %10 eriyor — **cron job yok**, çürüme okuma anında SQL'de
+hesaplanıyor. Kimse bir şehirde sonsuza kadar oturamıyor.
+
+**Ana sayfa 3D dünya:** three.js küre, NASA Blue Marble (gündüz) ve Black
+Marble (gece) dokularıyla; gece/gündüz sınırı güneşin o anki gerçek
+konumundan hesaplanıyor (Live / Day / Night). Teklif alan her şehir kürenin
+üstünde bir ışık sütunu — yüksekliği o şehirde yanan para, ligin lideri
+altın. Şehir aramasında klavyeyle gezerken küre o şehre dönüyor.
+
+- `/` — küre + şehir araması + şehirler ligi
+- `/city/<slug>` — o şehrin sıralaması ve teklif formu (5.000 şehir)
+- `/board` — dünya geneli tek liste
+- `/categories` — kategori sıralamaları
 
 Veritabanı **kurulu ve çalışıyor**. Bağlantı bilgileri `lib/db.ts` içinde
 varsayılan olarak gömülü (Supabase publishable key — tarayıcıya açılması
