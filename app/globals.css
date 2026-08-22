@@ -790,3 +790,33 @@ a.brand { text-decoration: none; color: inherit; }
   padding: 1px 5px;
   border-radius: 5px;
 }
+
+/* ---------- şehrin ilk kaydı ücretsiz ---------- */
+
+/* Şehir sayfasındaki ücretsiz form: link + buton, altında ince yazı. */
+.form--free { align-items: center; }
+.form--free .fine,
+.form--free .err { flex: 1 1 100%; margin: 0; }
+
+/* Ana sayfadaki tek satırlık ücretsiz form — tutar alanı yok. */
+.claim--free { grid-template-columns: 1fr 1fr auto; }
+@media (max-width: 720px) {
+  .claim--free { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .claim--free { grid-template-columns: 1fr; }
+}
+
+/* "Daha yüksekten başla" — ücretsiz formun altında katlanmış ödemeli form. */
+.alt-bid { border-top: 1px solid var(--line); padding-top: 12px; }
+.alt-bid > summary {
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--ink-3);
+  list-style: none;
+}
+.alt-bid > summary::-webkit-details-marker { display: none; }
+.alt-bid > summary::before { content: "＋ "; color: var(--ink-3); }
+.alt-bid[open] > summary::before { content: "− "; }
+.alt-bid > summary:hover { color: var(--ink-2); }
+.alt-bid[open] > summary { margin-bottom: 12px; }
