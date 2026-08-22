@@ -79,7 +79,9 @@ export async function POST(req: Request) {
       amount: tryAmount,
       currency: "TRY",
       productType: "digital",
-      imageUrl: `${siteUrl()}/og.png`,
+      // Shopier'in görsel botu redirect takip etmiyor; apex→www yönlendirmesine
+      // takılmasın diye görsel sabit, yönlendirmesiz bir adresten veriliyor.
+      imageUrl: "https://raw.githubusercontent.com/mryaman/outbid/main/public/og.png",
       customNote: `Your bid is live. See the board: ${siteUrl()}/?paid=1`,
       orderId: orderRef,
       hostedCheckout: Boolean(process.env.SHOPIER_SHOP_SLUG),
