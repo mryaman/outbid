@@ -1,14 +1,12 @@
 /**
  * Supabase REST (PostgREST) istemcisi.
- * Doğrudan Postgres bağlantısı yerine HTTP kullanıyoruz: DB parolası
- * gerekmiyor, serverless'ta bağlantı havuzu derdi yok.
+ * Doğrudan Postgres bağlantısı yerine HTTP: DB parolası gerekmiyor,
+ * serverless'ta bağlantı havuzu derdi yok.
  *
- * Taban tablolar RLS ile kapalı. Okuma `leaderboard` view'ından,
- * yazma SECURITY DEFINER RPC'lerinden geçiyor.
+ * Taban tablolar RLS ile kapalı. Okuma `leaderboard` / `city_league`
+ * view'larından, yazma SECURITY DEFINER RPC'lerinden geçiyor.
  */
 
-// Sunucu tarafı değişkenler — tarayıcıya gönderilmiyor.
-// Tüm veri erişimi Server Component'ler ve route handler'lar üzerinden.
 const URL_ = process.env.SUPABASE_URL ?? "https://twlzxnpbkvrjpcjqahrq.supabase.co";
 const KEY =
   process.env.SUPABASE_ANON_KEY ??
@@ -55,6 +53,13 @@ export type Row = {
   title: string;
   icon_url: string | null;
   category: string;
+  city_id: string | null;
+  city_name: string | null;
+  city_country: string | null;
+  city_cc: string | null;
+  city_lat: number | null;
+  city_lon: number | null;
+  city_rank: number;
   click_count: number;
   created_at: string;
   last_bid_at: string;
@@ -62,18 +67,55 @@ export type Row = {
   effective_cents: number;
 };
 
+export type LeagueRow = {
+  id: string;
+  name: string;
+  country: string;
+  country_code: string;
+  lat: number;
+  lon: number;
+  population: number;
+  listings: number;
+  effective_cents: number;
+  lifetime_cents: number;
+  last_bid_at: string;
+  top_title: string | null;
+  top_icon_url: string | null;
+  top_listing_id: string | null;
+  top_kind: string | null;
+  league_rank: number;
+};
+
 export type Stats = {
   listings: number;
   visits: number;
   online: number;
   slots: number;
+  cities: number;
 };
 
-/** Board — çürüme SQL'de hesaplanıyor. Kategori verilirse filtrelenir. */
-export function getBoard(limit = 100, category?: string) {
-  const filter = category ? `&category=eq.${encodeURIComponent(category)}` : "";
+/** Global board — çürüme SQL'de. Kategori/şehir verilirse filtrelenir. */
+export function getBoard(limit = 100, opts: { category?: string; cityId?: string } = {}) {
+  const filters = [
+    opts.category ? `&category=eq.${encodeURIComponent(opts.category)}` : "",
+    opts.cityId ? `&city_id=eq.${encodeURIComponent(opts.cityId)}` : "",
+  ].join("");
   return rest<Row[]>(
-    `leaderboard?select=*${filter}&limit=${limit}`,
+    `leaderboard?select=*${filters}&order=effective_cents.desc,created_at.asc&limit=${limit}`,
+    { revalidate: 15 },
+    []
+  );
+}
+
+/** Bir şehrin kendi ligi — sıralama şehir içinde. */
+export function getCityBoard(cityId: string, limit = 100) {
+  return getBoard(limit, { cityId });
+}
+
+/** Şehirler ligi — en çok harcayandan en aza. */
+export function getCityLeague(limit = 100) {
+  return rest<LeagueRow[]>(
+    `city_league?select=*&order=effective_cents.desc&limit=${limit}`,
     { revalidate: 15 },
     []
   );
@@ -83,16 +125,50 @@ export function getStats() {
   return rest<Stats>(
     "rpc/board_stats",
     { method: "POST", body: "{}", revalidate: 15 },
-    { listings: 0, visits: 0, online: 0, slots: 30 }
+    { listings: 0, visits: 0, online: 0, slots: 30, cities: 0 }
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Şehir kaydı — gömülü GeoNames verisiyle, sunucudan, secret ile
+// ---------------------------------------------------------------------------
+
+function rpcSecret(): string {
+  const s = process.env.PAYMENT_RPC_SECRET;
+  if (!s) console.error("PAYMENT_RPC_SECRET is not set");
+  return s ?? "";
+}
+
+export function ensureCity(city: {
+  id: string;
+  name: string;
+  country: string;
+  cc: string;
+  lat: number;
+  lon: number;
+  pop: number;
+}) {
+  return rest<{ ok?: boolean; error?: string }>(
+    "rpc/ensure_city",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        p_secret: rpcSecret(),
+        p_id: city.id,
+        p_name: city.name,
+        p_country: city.country,
+        p_cc: city.cc,
+        p_lat: city.lat,
+        p_lon: city.lon,
+        p_pop: city.pop,
+      }),
+    },
+    { error: "server_error" }
   );
 }
 
 export type SubmitResult = { id?: string; error?: string };
 
-/**
- * Kontenjan, kredi tutarı ve hız sınırı veritabanındaki app_config'ten
- * okunuyor — çağıran taraf bunları belirleyemez.
- */
 export function submitListing(args: {
   kind: string;
   dedupeKey: string;
@@ -100,6 +176,7 @@ export function submitListing(args: {
   title: string;
   iconUrl: string;
   ip: string;
+  cityId: string;
   category?: string;
 }) {
   return rest<SubmitResult>(
@@ -113,6 +190,7 @@ export function submitListing(args: {
         p_title: args.title,
         p_icon_url: args.iconUrl,
         p_ip: args.ip,
+        p_city_id: args.cityId,
         p_category: args.category ?? "other",
       }),
     },
@@ -150,13 +228,13 @@ export function trackVisit(sessionId: string) {
 // Ödeme (Shopier) — RPC'ler PAYMENT_RPC_SECRET ile korunuyor.
 // ---------------------------------------------------------------------------
 
-function rpcSecret(): string {
-  const s = process.env.PAYMENT_RPC_SECRET;
-  if (!s) console.error("PAYMENT_RPC_SECRET is not set");
-  return s ?? "";
-}
-
-export type PendingResult = { id?: string; order_ref?: string; error?: string; min?: number; max?: number };
+export type PendingResult = {
+  id?: string;
+  order_ref?: string;
+  error?: string;
+  min?: number;
+  max?: number;
+};
 
 export function createPendingPayment(args: {
   orderRef: string;
@@ -170,6 +248,7 @@ export function createPendingPayment(args: {
   amountTryCents?: number | null;
   email?: string | null;
   ip: string;
+  cityId: string;
   category?: string;
 }) {
   return rest<PendingResult>(
@@ -189,6 +268,7 @@ export function createPendingPayment(args: {
         p_amount_try_cents: args.amountTryCents ?? null,
         p_email: args.email ?? null,
         p_ip: args.ip,
+        p_city_id: args.cityId,
         p_category: args.category ?? "other",
       }),
     },
@@ -201,6 +281,7 @@ export type ConfirmResult = {
   status?: string;
   listing_id?: string;
   title?: string;
+  city_id?: string;
   duplicate?: boolean;
   error?: string;
   expected?: number;
