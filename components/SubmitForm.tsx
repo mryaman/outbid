@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { CATEGORIES } from "@/lib/categories";
 
 export default function SubmitForm() {
   const router = useRouter();
   const [link, setLink] = useState("");
+  const [category, setCategory] = useState("other");
   const [website, setWebsite] = useState(""); // honeypot
   const [state, setState] = useState<"idle" | "sending" | "done">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +22,7 @@ export default function SubmitForm() {
       const res = await fetch("/api/submit", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ link, website }),
+        body: JSON.stringify({ link, website, category }),
       });
       const data = await res.json();
 
@@ -61,6 +63,21 @@ export default function SubmitForm() {
         spellCheck={false}
         required
       />
+      <label className="sr-only" htmlFor="category">
+        Category
+      </label>
+      <select
+        id="category"
+        className="cat-select"
+        value={category}
+        onChange={(e) => setCategory(e.target.value)}
+      >
+        {CATEGORIES.map((c) => (
+          <option key={c.slug} value={c.slug}>
+            {c.name}
+          </option>
+        ))}
+      </select>
       <input
         tabIndex={-1}
         autoComplete="off"

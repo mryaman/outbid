@@ -14,10 +14,12 @@ export default function Row({
   rank,
   row,
   nextCents,
+  canOutbid = false,
 }: {
   rank: number;
   row: R;
   nextCents: number;
+  canOutbid?: boolean;
 }) {
   const [cents, setCents] = useState(row.effective_cents);
 
@@ -70,6 +72,21 @@ export default function Row({
       >
         {centsToUsd(cents)}
       </span>
+      {canOutbid && (
+        <button
+          type="button"
+          className="outbid-btn"
+          title={`Add to ${row.title}'s bid`}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const prefill = row.kind === "x" ? row.title : row.target_url;
+            window.location.href = `/?bid=${encodeURIComponent(prefill)}#bid`;
+          }}
+        >
+          Boost
+        </button>
+      )}
     </a>
   );
 }
