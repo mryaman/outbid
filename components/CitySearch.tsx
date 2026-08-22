@@ -20,12 +20,17 @@ export type Hit = {
 
 export default function CitySearch({
   onPreview,
+  onPick,
   placeholder = "Search any city — Istanbul, Lagos, São Paulo…",
   autoFocus = false,
+  clearOnPick = false,
 }: {
   onPreview?: (id: string) => void;
+  /** Verilirse şehir sayfasına gitmek yerine seçimi yukarı bildirir. */
+  onPick?: (hit: Hit) => void;
   placeholder?: string;
   autoFocus?: boolean;
+  clearOnPick?: boolean;
 }) {
   const [q, setQ] = useState("");
   const [hits, setHits] = useState<Hit[]>([]);
@@ -66,6 +71,12 @@ export default function CitySearch({
   }, []);
 
   const go = (h: Hit) => {
+    if (onPick) {
+      onPick(h);
+      setOpen(false);
+      setQ(clearOnPick ? "" : h.name);
+      return;
+    }
     window.location.href = `/city/${h.id}`;
   };
 

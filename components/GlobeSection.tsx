@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useState } from "react";
-import CitySearch from "./CitySearch";
+import ClaimForm from "./ClaimForm";
 import type { GlobeCity } from "./GlobeView";
 
 // three.js sunucuda çalışmaz; küre yalnızca tarayıcıda yüklenir.
@@ -11,13 +11,19 @@ const GlobeView = dynamic(() => import("./GlobeView"), {
   loading: () => <div className="globe globe--skeleton" aria-hidden />,
 });
 
-export default function GlobeSection({ cities }: { cities: GlobeCity[] }) {
+export default function GlobeSection({
+  cities,
+  paid,
+}: {
+  cities: GlobeCity[];
+  paid: boolean;
+}) {
   const [focus, setFocus] = useState<string | null>(null);
 
   return (
     <div className="globe-section">
       <GlobeView cities={cities} focusId={focus} />
-      <CitySearch onPreview={setFocus} />
+      <ClaimForm onPreview={setFocus} paid={paid} />
     </div>
   );
 }
