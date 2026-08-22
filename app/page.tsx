@@ -71,7 +71,12 @@ export default async function Home() {
         </p>
       </header>
 
-      <GlobeSection cities={cities} />
+      <GlobeSection cities={cities} paid={CONFIG.phase === "paid"} />
+
+      <p className="fine browse-hint">
+        Just looking? Click any glowing city on the globe, or open one from the
+        league below.
+      </p>
 
       <section className="globe-stats" aria-label="Live totals">
         <div>

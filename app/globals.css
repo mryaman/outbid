@@ -618,3 +618,86 @@ a.brand { text-decoration: none; color: inherit; }
 .globe__label.is-top { border-color: rgba(255, 194, 71, 0.55); }
 .globe__label.is-top i { color: #ffc247; }
 .globe__label:hover { background: rgba(20, 26, 44, 0.9); }
+
+/* ---------- ana sayfa teklif formu (link + şehir + tutar) ---------- */
+
+.claim {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.claim > input[type="text"],
+.claim > input:not([type]),
+.claim > input#claim-link {
+  padding: 14px 16px;
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  outline: none;
+  min-width: 0;
+}
+.claim > input#claim-link:focus { border-color: var(--accent); }
+
+.claim__city { min-width: 0; }
+.claim__city .csearch input { padding: 14px 16px; }
+
+.citypick {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%;
+  padding: 13px 16px;
+  font: inherit;
+  background: var(--accent-soft);
+  color: var(--ink);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+}
+.citypick b { font-weight: 600; }
+.citypick__x { margin-left: auto; color: var(--ink-3); font-size: 18px; line-height: 1; }
+
+.claim .amount-wrap {
+  display: flex; align-items: center;
+  padding: 0 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.claim .amount-wrap .cur { color: var(--ink-3); }
+.claim .amount-wrap input {
+  width: 76px;
+  padding: 14px 6px;
+  font: inherit;
+  border: 0; outline: none;
+  background: transparent;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.claim__go {
+  padding: 14px 20px;
+  font: inherit; font-weight: 600;
+  color: #fff;
+  background: var(--accent);
+  border: 0; border-radius: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.claim__go:hover { filter: brightness(1.06); }
+.claim__go:disabled { opacity: 0.6; cursor: default; }
+
+.claim .fine, .claim .err, .claim .ok { grid-column: 1 / -1; margin: 0; }
+
+@media (max-width: 720px) {
+  .claim { grid-template-columns: 1fr 1fr; }
+  .claim__go { grid-column: 1 / -1; }
+}
+@media (max-width: 480px) {
+  .claim { grid-template-columns: 1fr; }
+}
+
+.browse-hint { margin: -6px 0 0; text-align: center; }
