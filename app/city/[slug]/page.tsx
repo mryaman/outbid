@@ -13,6 +13,8 @@ import Nav from "@/components/Nav";
 import Row from "@/components/Row";
 import BidForm from "@/components/BidForm";
 import SubmitForm from "@/components/SubmitForm";
+import FreeClaimForm from "@/components/FreeClaimForm";
+import { FREE } from "@/lib/i18n/free";
 import CityGlobe from "@/components/CityGlobe";
 import CitySearch from "@/components/CitySearch";
 import Banner from "@/components/Banner";
@@ -75,6 +77,9 @@ export default async function CityPage({
   const flag = flagOf(city.cc);
   const topCents = board[0]?.effective_cents ?? 0;
   const takeTop = Math.max(CONFIG.minBidCents, topCents + 1);
+  // Şehirde canlı kayıt yoksa ilk sıra ücretsiz. Aynı koşulu sunucu da
+  // (claim_free_city) yeniden kontrol ediyor — burası sadece arayüz.
+  const freeCity = board.length === 0;
 
   const globeCities: GlobeCity[] = [
     ...league.slice(0, 120).map((l) => ({
@@ -181,8 +186,8 @@ export default async function CityPage({
             </>
           ) : (
             <>
-              Nobody has claimed {city.name} yet.{" "}
-              <strong>#1 costs {centsToUsd(CONFIG.minBidCents)}.</strong>
+              Nobody has claimed {city.name} yet —{" "}
+              <strong>the first spot is free.</strong>
             </>
           )}
         </p>
@@ -209,7 +214,21 @@ export default async function CityPage({
 
       <section className="founding" id="bid">
         <span className="pill">{city.name}</span>
-        {CONFIG.phase === "paid" ? (
+        {freeCity ? (
+          <>
+            <FreeClaimForm
+              cityId={city.id}
+              cityName={city.name}
+              credit={CONFIG.freeFirstCents}
+            />
+            {CONFIG.phase === "paid" && (
+              <details className="alt-bid">
+                <summary>{FREE.en.orBid}</summary>
+                <BidForm cityId={city.id} cityName={city.name} topCents={topCents} />
+              </details>
+            )}
+          </>
+        ) : CONFIG.phase === "paid" ? (
           <>
             <p>
               Put your profile on {city.name} — or outbid whoever is sitting on
@@ -226,15 +245,17 @@ export default async function CityPage({
             <SubmitForm cityId={city.id} cityName={city.name} />
           </>
         )}
-        <p className="fine">
-          X, TikTok, Instagram, LinkedIn, YouTube, GitHub — or any link you own.
-        </p>
+        {!freeCity && (
+          <p className="fine">
+            X, TikTok, Instagram, LinkedIn, YouTube, GitHub — or any link you own.
+          </p>
+        )}
       </section>
 
       <section className="board" aria-label={`${city.name} leaderboard`}>
         {board.length === 0 ? (
           <p className="empty">
-            Empty. The first payment owns {city.name}.
+            Empty. Claim {city.name} above — the first spot costs nothing.
           </p>
         ) : (
           board.map((r, i) => (
