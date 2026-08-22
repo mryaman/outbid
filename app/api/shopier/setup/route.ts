@@ -68,6 +68,41 @@ export async function GET(req: Request) {
     report.webhookError = String(e);
   }
 
+  // Mağaza sepetini kapat: taşıyıcı-ürün modelinde sepet birikmesi
+  // (terk edilen denemeler) istemiyoruz; her ödeme tek ürün olmalı.
+  if (url.searchParams.get("disable_cart") === "1") {
+    try {
+      report.cartUpdate = await client.shop.updateSettings({ cart: false });
+    } catch (e) {
+      report.cartUpdateError = String(e);
+    }
+  }
+
+  // Temizlik: terk edilen taşıyıcı ürünleri sil ("outbid.love bid" başlıklı,
+  // bekleyen ödemesi olmayanlar dahil hepsi — aktif checkout'lar yeni ürün açar).
+  if (url.searchParams.get("cleanup_products") === "1") {
+    try {
+      const all = await client.products.list({ limit: 100 });
+      const carriers = (all ?? []).filter((p) =>
+        (p as { title?: string }).title?.startsWith("outbid.love bid")
+      );
+      const deleted: string[] = [];
+      for (const p of carriers) {
+        const id = (p as { id?: string }).id;
+        if (!id) continue;
+        try {
+          await client.products.delete(id);
+          deleted.push(id);
+        } catch {
+          /* tek tek geç */
+        }
+      }
+      report.cleanupDeleted = deleted;
+    } catch (e) {
+      report.cleanupError = String(e);
+    }
+  }
+
   // Teşhis: farklı ürün kombinasyonlarını dene, ham API hatasını raporla.
   // Oluşan test ürünleri hemen silinir.
   if (url.searchParams.get("test_product") === "1") {
