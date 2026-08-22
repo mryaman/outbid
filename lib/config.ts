@@ -7,15 +7,18 @@ export const CONFIG = {
 
   // --- FAZ ---
   // 'founding' : ödeme kapalı, ilk N kayıt ücretsiz kuruluş kredisiyle giriyor
-  // 'paid'     : ödeme açık (sağlayıcı onayı geldiğinde)
-  phase: "founding" as "founding" | "paid",
+  // 'paid'     : ödeme açık (Shopier)
+  // Deploy'suz değiştirmek için Netlify'da PHASE=paid env değişkenini kullan.
+  phase: (process.env.PHASE === "paid" ? "paid" : "founding") as "founding" | "paid",
 
   // --- Kuruluş fazı ---
   foundingSlots: 30,
   foundingCents: 1000, // herkese $10'lık çürüyen kredi
 
-  // --- Ödemeli faz (şimdilik pasif) ---
-  minBidCents: 1000,   // $10
+  // --- Ödemeli faz ---
+  // DB'deki app_config (min_bid_cents / max_bid_cents) asıl otorite;
+  // buradakiler arayüz gösterimi için. İkisini birlikte değiştir.
+  minBidCents: 500,    // $5 — outbid.lol ile aynı giriş eşiği
   stepCents: 500,      // $5
   maxBidCents: 500000,
 

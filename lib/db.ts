@@ -54,6 +54,7 @@ export type Row = {
   target_url: string;
   title: string;
   icon_url: string | null;
+  category: string;
   click_count: number;
   created_at: string;
   last_bid_at: string;
@@ -68,10 +69,11 @@ export type Stats = {
   slots: number;
 };
 
-/** Board — çürüme SQL'de hesaplanıyor. */
-export function getBoard(limit = 100) {
+/** Board — çürüme SQL'de hesaplanıyor. Kategori verilirse filtrelenir. */
+export function getBoard(limit = 100, category?: string) {
+  const filter = category ? `&category=eq.${encodeURIComponent(category)}` : "";
   return rest<Row[]>(
-    `leaderboard?select=*&limit=${limit}`,
+    `leaderboard?select=*${filter}&limit=${limit}`,
     { revalidate: 15 },
     []
   );
@@ -98,6 +100,7 @@ export function submitListing(args: {
   title: string;
   iconUrl: string;
   ip: string;
+  category?: string;
 }) {
   return rest<SubmitResult>(
     "rpc/submit_listing",
@@ -110,6 +113,7 @@ export function submitListing(args: {
         p_title: args.title,
         p_icon_url: args.iconUrl,
         p_ip: args.ip,
+        p_category: args.category ?? "other",
       }),
     },
     { error: "server_error" }
@@ -139,5 +143,84 @@ export function trackVisit(sessionId: string) {
     "rpc/track_visit",
     { method: "POST", body: JSON.stringify({ p_session: sessionId }) },
     { total: 0, online: 0 }
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Ödeme (Shopier) — RPC'ler PAYMENT_RPC_SECRET ile korunuyor.
+// ---------------------------------------------------------------------------
+
+function rpcSecret(): string {
+  const s = process.env.PAYMENT_RPC_SECRET;
+  if (!s) console.error("PAYMENT_RPC_SECRET is not set");
+  return s ?? "";
+}
+
+export type PendingResult = { id?: string; order_ref?: string; error?: string; min?: number; max?: number };
+
+export function createPendingPayment(args: {
+  orderRef: string;
+  productId: string;
+  kind: string;
+  dedupeKey: string;
+  targetUrl: string;
+  title: string;
+  iconUrl: string;
+  amountCents: number;
+  email?: string | null;
+  ip: string;
+  category?: string;
+}) {
+  return rest<PendingResult>(
+    "rpc/create_pending_payment",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        p_secret: rpcSecret(),
+        p_order_ref: args.orderRef,
+        p_product_id: args.productId,
+        p_kind: args.kind,
+        p_dedupe_key: args.dedupeKey,
+        p_target_url: args.targetUrl,
+        p_title: args.title,
+        p_icon_url: args.iconUrl,
+        p_amount_cents: args.amountCents,
+        p_email: args.email ?? null,
+        p_ip: args.ip,
+        p_category: args.category ?? "other",
+      }),
+    },
+    { error: "server_error" }
+  );
+}
+
+export type ConfirmResult = {
+  ok?: boolean;
+  status?: string;
+  listing_id?: string;
+  title?: string;
+  duplicate?: boolean;
+  error?: string;
+  expected?: number;
+  paid?: number;
+};
+
+export function confirmPaymentByProduct(args: {
+  productId: string;
+  paymentId: string;
+  paidCents: number | null;
+}) {
+  return rest<ConfirmResult>(
+    "rpc/confirm_payment_by_product",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        p_secret: rpcSecret(),
+        p_product_id: args.productId,
+        p_payment_id: args.paymentId,
+        p_paid_cents: args.paidCents,
+      }),
+    },
+    { error: "server_error" }
   );
 }
