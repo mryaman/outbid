@@ -89,8 +89,9 @@ export default function BidForm({
             Take #1 for <strong>${beatTop.toLocaleString("en-US")}</strong>.
           </>
         )}{" "}
-        Pay by card via Shopier — your bid goes live the moment the payment
-        clears, then starts decaying like everyone else&apos;s.
+        Pay by card via Shopier (charged in Turkish lira at the live rate) —
+        your bid goes live the moment the payment clears, then starts decaying
+        like everyone else&apos;s.
       </p>
     </form>
   );
