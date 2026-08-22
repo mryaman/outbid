@@ -1,6 +1,9 @@
 import { getBoard, getStats } from "@/lib/db";
 import { CONFIG, centsToUsd } from "@/lib/config";
 import SubmitForm from "@/components/SubmitForm";
+import BidForm from "@/components/BidForm";
+import Banner from "@/components/Banner";
+import Nav from "@/components/Nav";
 import DecayMeter from "@/components/DecayMeter";
 import LiveStats from "@/components/LiveStats";
 import Row from "@/components/Row";
@@ -26,6 +29,7 @@ export default async function Home() {
           </span>
           <LiveStats initialVisits={stats.visits} initialOnline={stats.online} />
         </div>
+        <Nav current="/" />
 
         <h1>The top is always winnable.</h1>
         <p className="lede">
@@ -34,7 +38,22 @@ export default async function Home() {
           forever, and the board never freezes.
         </p>
 
-        {remaining > 0 ? (
+        <Banner />
+
+        {CONFIG.phase === "paid" ? (
+          <div className="founding">
+            <span className="pill">Live bidding</span>
+            <p>
+              Put your link on the board — or outbid the one above you. You pay
+              exactly what you bid, once.
+            </p>
+            <BidForm topCents={board[0]?.effective_cents ?? 0} />
+            <p className="fine">
+              Your product site or your X handle. No account, no email — card
+              checkout via Shopier.
+            </p>
+          </div>
+        ) : remaining > 0 ? (
           <div className="founding">
             <span className="pill">Founding roster</span>
             <p>
@@ -68,6 +87,7 @@ export default async function Home() {
               rank={i + 1}
               row={r}
               nextCents={board[i + 1]?.effective_cents ?? 0}
+              canOutbid={CONFIG.phase === "paid"}
             />
           ))
         )}

@@ -4,12 +4,24 @@ import { CONFIG } from "@/lib/config";
 import "./globals.css";
 
 const DESC =
-  "Your rank is whatever you paid — but every payment decays 10% a day. The top is always winnable.";
+  "The pay-to-rank leaderboard where every bid decays 10% a day. Bid any amount to put your site or X handle on top — nobody sits at #1 forever.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(CONFIG.url),
-  title: `${CONFIG.siteName} — ${CONFIG.tagline}`,
+  title: {
+    default: `${CONFIG.siteName} — ${CONFIG.tagline}`,
+    template: `%s · ${CONFIG.siteName}`,
+  },
   description: DESC,
+  alternates: { canonical: "/" },
+  keywords: [
+    "outbid",
+    "pay to rank leaderboard",
+    "bid for the top spot",
+    "decaying leaderboard",
+    "advertise your website",
+    "outbid.lol alternative",
+  ],
   openGraph: {
     title: `${CONFIG.siteName} — ${CONFIG.tagline}`,
     description: DESC,
@@ -17,12 +29,23 @@ export const metadata: Metadata = {
     siteName: CONFIG.siteName,
     type: "website",
     locale: "en_US",
+    images: [{ url: "/og-card.png", width: 1200, height: 630, alt: CONFIG.siteName }],
   },
   twitter: {
     card: "summary_large_image",
     title: `${CONFIG.siteName} — ${CONFIG.tagline}`,
     description: DESC,
+    images: ["/og-card.png"],
   },
+  robots: { index: true, follow: true },
+};
+
+const JSONLD = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: CONFIG.siteName,
+  url: CONFIG.url,
+  description: DESC,
 };
 
 export default function RootLayout({
@@ -46,6 +69,10 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(JSONLD) }}
+        />
         {children}
         <Script
           defer
