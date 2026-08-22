@@ -2,24 +2,28 @@
 
 import { useEffect, useState } from "react";
 import { CONFIG, centsToUsd, hoursUntilBelow, humanHours } from "@/lib/config";
+import { platformOf, PLATFORM_LABEL } from "@/lib/normalize";
 import type { Row as R } from "@/lib/db";
 
 /**
- * A board row. The effective amount decays in the browser, second by
- * second, starting from the server value and applying the same formula.
- * Watching the number fall is what makes people pay again — if decay is
- * invisible, the whole mechanic does nothing.
+ * Board satırı. Etkin tutar tarayıcıda saniye saniye eriyor — sunucudan
+ * gelen değerden başlayıp aynı formülü uygulayarak. Çürüme görünmezse
+ * mekanik hiçbir şey yapmaz; asıl ürün bu sayının düşüşü.
  */
 export default function Row({
   rank,
   row,
   nextCents,
   canOutbid = false,
+  cityId,
+  showCity = false,
 }: {
   rank: number;
   row: R;
   nextCents: number;
   canOutbid?: boolean;
+  cityId?: string;
+  showCity?: boolean;
 }) {
   const [cents, setCents] = useState(row.effective_cents);
 
@@ -35,26 +39,33 @@ export default function Row({
 
   const hrs = nextCents > 0 ? hoursUntilBelow(cents, nextCents) : Infinity;
   const soon = Number.isFinite(hrs) && hrs < 48;
+  const platform = platformOf(row.target_url);
 
   return (
     <a className="row" href={`/go?id=${row.id}`} rel="nofollow noopener">
       <span className="rank">#{rank}</span>
+
       {row.icon_url ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img
-          className="icon"
-          src={row.icon_url}
-          alt=""
-          width={40}
-          height={40}
-          loading="lazy"
-        />
+        <img className="icon" src={row.icon_url} alt="" width={40} height={40} loading="lazy" />
       ) : (
-        <span className="icon icon--blank" aria-hidden />
+        <span className={`icon icon--badge icon--${platform}`} aria-hidden>
+          {PLATFORM_LABEL[platform].slice(0, 2)}
+        </span>
       )}
+
       <span className="meta">
-        <span className="title">{row.title}</span>
+        <span className="title">
+          {row.title}
+          <span className={`plat plat--${platform}`}>{PLATFORM_LABEL[platform]}</span>
+        </span>
         <span className="sub">
+          {showCity && row.city_name && (
+            <>
+              <span className="citychip">{row.city_name}</span>
+              <span aria-hidden> · </span>
+            </>
+          )}
           {row.click_count.toLocaleString("en-US")} clicks
           {soon && (
             <>
@@ -66,12 +77,11 @@ export default function Row({
           )}
         </span>
       </span>
-      <span
-        className="amount"
-        title={`Total paid: ${centsToUsd(row.lifetime_cents)}`}
-      >
+
+      <span className="amount" title={`Total paid: ${centsToUsd(row.lifetime_cents)}`}>
         {centsToUsd(cents)}
       </span>
+
       {canOutbid && (
         <button
           type="button"
@@ -81,7 +91,9 @@ export default function Row({
             e.preventDefault();
             e.stopPropagation();
             const prefill = row.kind === "x" ? row.title : row.target_url;
-            window.location.href = `/?bid=${encodeURIComponent(prefill)}#bid`;
+            const city = cityId ?? row.city_id;
+            const base = city ? `/city/${city}` : "/";
+            window.location.href = `${base}?bid=${encodeURIComponent(prefill)}#bid`;
           }}
         >
           Boost

@@ -1,5 +1,6 @@
 const LINKS = [
-  { href: "/", label: "Leaderboard" },
+  { href: "/", label: "Globe" },
+  { href: "/board", label: "World board" },
   { href: "/categories", label: "Categories" },
   { href: "/about", label: "About" },
   { href: "/rules", label: "Rules" },

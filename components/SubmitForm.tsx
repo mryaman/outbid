@@ -4,7 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CATEGORIES } from "@/lib/categories";
 
-export default function SubmitForm() {
+export default function SubmitForm({
+  cityId,
+  cityName,
+}: {
+  cityId: string;
+  cityName?: string;
+}) {
   const router = useRouter();
   const [link, setLink] = useState("");
   const [category, setCategory] = useState("other");
@@ -22,7 +28,7 @@ export default function SubmitForm() {
       const res = await fetch("/api/submit", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ link, website, category }),
+        body: JSON.stringify({ link, website, category, city: cityId }),
       });
       const data = await res.json();
 
@@ -43,7 +49,8 @@ export default function SubmitForm() {
   if (state === "done") {
     return (
       <p className="ok" role="status">
-        You&apos;re on the board. Your credit started decaying just now.
+        You&apos;re on {cityName ?? "the board"}. Your credit started decaying
+        just now.
       </p>
     );
   }
@@ -58,7 +65,7 @@ export default function SubmitForm() {
         name="link"
         value={link}
         onChange={(e) => setLink(e.target.value)}
-        placeholder="yoursite.com or @yourhandle"
+        placeholder="@yourhandle, a profile link, or yoursite.com"
         autoComplete="off"
         spellCheck={false}
         required

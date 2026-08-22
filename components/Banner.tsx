@@ -11,6 +11,8 @@ const ERR: Record<string, string> = {
   bad_request: "That didn't come through right. Try again.",
   bad_link: "That link isn't valid.",
   bad_amount: "Enter a valid amount (min $5, max $5,000).",
+  unknown_city: "Pick a city from the search list first.",
+  duplicate: "That link already holds a spot in this city.",
   rate_limited: "Too many attempts from your network. Try again in a bit.",
   not_configured: "Payments are being wired up. Try again soon.",
   provider_error: "Our payment provider hiccuped. Nothing was charged — try again.",

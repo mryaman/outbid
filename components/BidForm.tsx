@@ -7,18 +7,23 @@ import { CATEGORIES } from "@/lib/categories";
 /**
  * Ödemeli faz formu. fetch YOK — normal form POST:
  * sunucu, tarayıcıyı Shopier hosted checkout'a gönderen HTML ile yanıtlar.
+ * Şehir formun bir parçası: teklif her zaman bir şehre verilir.
  */
 export default function BidForm({
+  cityId,
+  cityName,
   prefillLink = "",
   topCents = 0,
 }: {
+  cityId: string;
+  cityName?: string;
   prefillLink?: string;
   topCents?: number;
 }) {
   const [link, setLink] = useState(prefillLink);
   const [amount, setAmount] = useState("");
 
-  // "Outbid" butonundan gelen ?bid= önceden doldurma — sayfa statik kalsın
+  // "Boost" butonundan gelen ?bid= önceden doldurma — sayfa statik kalsın
   // diye istemci tarafında okunur.
   useEffect(() => {
     const b = new URLSearchParams(window.location.search).get("bid");
@@ -30,26 +35,27 @@ export default function BidForm({
 
   return (
     <form className="form form--bid" method="POST" action="/api/checkout" id="bid">
+      <input type="hidden" name="city" value={cityId} />
+
       <label className="sr-only" htmlFor="bid-link">
-        Your link or X handle
+        Your profile link or @handle
       </label>
       <input
         id="bid-link"
         name="link"
         value={link}
         onChange={(e) => setLink(e.target.value)}
-        placeholder="yoursite.com or @yourhandle"
+        placeholder="@yourhandle, a profile link, or yoursite.com"
         autoComplete="off"
         spellCheck={false}
         required
       />
+
       <label className="sr-only" htmlFor="bid-amount">
         Bid amount in US dollars
       </label>
       <div className="amount-wrap">
-        <span className="cur" aria-hidden>
-          $
-        </span>
+        <span className="cur" aria-hidden>$</span>
         <input
           id="bid-amount"
           name="amount"
@@ -61,16 +67,14 @@ export default function BidForm({
           required
         />
       </div>
-      <label className="sr-only" htmlFor="bid-category">
-        Category
-      </label>
+
+      <label className="sr-only" htmlFor="bid-category">Category</label>
       <select id="bid-category" name="category" defaultValue="other" className="cat-select">
         {CATEGORIES.map((c) => (
-          <option key={c.slug} value={c.slug}>
-            {c.name}
-          </option>
+          <option key={c.slug} value={c.slug}>{c.name}</option>
         ))}
       </select>
+
       {/* honeypot */}
       <input
         tabIndex={-1}
@@ -80,14 +84,15 @@ export default function BidForm({
         name="website"
         defaultValue=""
       />
-      <button type="submit">Outbid →</button>
+
+      <button type="submit">
+        {cityName ? `Take ${cityName} →` : "Outbid →"}
+      </button>
+
       <p className="fine">
         Min {centsToUsd(CONFIG.minBidCents)}.
         {beatTop !== null && (
-          <>
-            {" "}
-            Take #1 for <strong>${beatTop.toLocaleString("en-US")}</strong>.
-          </>
+          <> Take #1 for <strong>${beatTop.toLocaleString("en-US")}</strong>.</>
         )}{" "}
         Pay by card via Shopier (charged in Turkish lira at the live rate) —
         your bid goes live the moment the payment clears, then starts decaying
