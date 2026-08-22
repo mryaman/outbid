@@ -112,6 +112,14 @@ export default async function Home() {
       <footer className="foot">
         <a href="/rules">Rules</a>
         <span aria-hidden>·</span>
+        <a href="/price">Pricing</a>
+        <span aria-hidden>·</span>
+        <a href="/terms">Terms</a>
+        <span aria-hidden>·</span>
+        <a href="/privacy">Privacy</a>
+        <span aria-hidden>·</span>
+        <a href="/policy">Refunds</a>
+        <span aria-hidden>·</span>
         <span>{stats.listings} listings</span>
         <span aria-hidden>·</span>
         <a
