@@ -24,6 +24,7 @@ export default function CitySearch({
   placeholder = "Search any city — Istanbul, Lagos, São Paulo…",
   autoFocus = false,
   clearOnPick = false,
+  langPrefix = "",
 }: {
   onPreview?: (id: string) => void;
   /** Verilirse şehir sayfasına gitmek yerine seçimi yukarı bildirir. */
@@ -31,6 +32,8 @@ export default function CitySearch({
   placeholder?: string;
   autoFocus?: boolean;
   clearOnPick?: boolean;
+  /** "" (İngilizce) ya da "/ru" gibi dil öneki. */
+  langPrefix?: string;
 }) {
   const [q, setQ] = useState("");
   const [hits, setHits] = useState<Hit[]>([]);
@@ -77,7 +80,7 @@ export default function CitySearch({
       setQ(clearOnPick ? "" : h.name);
       return;
     }
-    window.location.href = `/city/${h.id}`;
+    window.location.href = `${langPrefix}/city/${h.id}`;
   };
 
   const move = (delta: number) => {

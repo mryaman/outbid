@@ -29,11 +29,21 @@ function flag(cc: string): string {
   );
 }
 
-function LeagueRowView({ row, rank }: { row: LeagueRow; rank: number }) {
+function LeagueRowView({
+  row,
+  rank,
+  langPrefix = "",
+  profiles = "{n} profiles",
+}: {
+  row: LeagueRow;
+  rank: number;
+  langPrefix?: string;
+  profiles?: string;
+}) {
   const cents = useDecay(row.effective_cents);
 
   return (
-    <a className="lrow" href={`/city/${row.id}`}>
+    <a className="lrow" href={`${langPrefix}/city/${row.id}`}>
       <span className="rank">#{rank}</span>
       <span className="lflag" aria-hidden>{flag(row.country_code)}</span>
       <span className="meta">
@@ -42,7 +52,7 @@ function LeagueRowView({ row, rank }: { row: LeagueRow; rank: number }) {
           <span className="lcountry">{row.country}</span>
         </span>
         <span className="sub">
-          {row.listings} {row.listings === 1 ? "profile" : "profiles"}
+          {profiles.replace("{n}", String(row.listings))}
           {row.top_title && (
             <>
               <span aria-hidden> · </span>
@@ -58,19 +68,30 @@ function LeagueRowView({ row, rank }: { row: LeagueRow; rank: number }) {
   );
 }
 
-export default function LeagueTable({ rows }: { rows: LeagueRow[] }) {
+export default function LeagueTable({
+  rows,
+  langPrefix = "",
+  profiles,
+  empty = "No city has been claimed yet. The first payment anywhere on earth takes the top of the league.",
+}: {
+  rows: LeagueRow[];
+  langPrefix?: string;
+  profiles?: string;
+  empty?: string;
+}) {
   if (!rows.length) {
-    return (
-      <p className="empty">
-        No city has been claimed yet. The first payment anywhere on earth takes
-        the top of the league.
-      </p>
-    );
+    return <p className="empty">{empty}</p>;
   }
   return (
     <div className="league">
       {rows.map((r, i) => (
-        <LeagueRowView key={r.id} row={r} rank={i + 1} />
+        <LeagueRowView
+          key={r.id}
+          row={r}
+          rank={i + 1}
+          langPrefix={langPrefix}
+          profiles={profiles}
+        />
       ))}
     </div>
   );

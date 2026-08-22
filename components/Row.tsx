@@ -4,11 +4,17 @@ import { useEffect, useState } from "react";
 import { CONFIG, centsToUsd, hoursUntilBelow, humanHours } from "@/lib/config";
 import { platformOf, PLATFORM_LABEL } from "@/lib/normalize";
 import type { Row as R } from "@/lib/db";
+import { ROW_LABELS, type RowLabels } from "@/lib/i18n/row";
+
+const t = (s: string, v: Record<string, string | number>) =>
+  s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? String(v[k]) : m));
 
 /**
  * Board satırı. Etkin tutar tarayıcıda saniye saniye eriyor — sunucudan
  * gelen değerden başlayıp aynı formülü uygulayarak. Çürüme görünmezse
  * mekanik hiçbir şey yapmaz; asıl ürün bu sayının düşüşü.
+ *
+ * `labels` / `langPrefix` çevrilmiş sayfalardan geçirilir; verilmezse İngilizce.
  */
 export default function Row({
   rank,
@@ -17,6 +23,8 @@ export default function Row({
   canOutbid = false,
   cityId,
   showCity = false,
+  labels = ROW_LABELS.en,
+  langPrefix = "",
 }: {
   rank: number;
   row: R;
@@ -24,6 +32,9 @@ export default function Row({
   canOutbid?: boolean;
   cityId?: string;
   showCity?: boolean;
+  labels?: RowLabels;
+  /** "" (İngilizce) ya da "/ru" gibi dil öneki. */
+  langPrefix?: string;
 }) {
   const [cents, setCents] = useState(row.effective_cents);
 
@@ -69,19 +80,19 @@ export default function Row({
               <span aria-hidden> · </span>
             </>
           )}
-          {row.click_count.toLocaleString("en-US")} clicks
+          {t(labels.clicks, { n: row.click_count.toLocaleString("en-US") })}
           {soon && (
             <>
               <span aria-hidden> · </span>
               <span className="warn">
-                falls to #{rank + 1} in {humanHours(hrs)}
+                {t(labels.falls, { rank: rank + 1, t: humanHours(hrs) })}
               </span>
             </>
           )}
         </span>
       </span>
 
-      <span className="amount" title={`Total paid: ${centsToUsd(row.lifetime_cents)}`}>
+      <span className="amount" title={t(labels.totalPaid, { amt: centsToUsd(row.lifetime_cents) })}>
         {centsToUsd(cents)}
       </span>
 
@@ -89,16 +100,16 @@ export default function Row({
         <button
           type="button"
           className="outbid-btn"
-          title={`Add to ${row.title}'s bid`}
+          title={`${labels.boost} — ${row.title}`}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
             const prefill = row.kind === "x" ? row.title : row.target_url;
             window.location.href =
-              `/city/${boostCity}?bid=${encodeURIComponent(prefill)}#bid`;
+              `${langPrefix}/city/${boostCity}?bid=${encodeURIComponent(prefill)}#bid`;
           }}
         >
-          Boost
+          {labels.boost}
         </button>
       )}
     </a>

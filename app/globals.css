@@ -701,3 +701,92 @@ a.brand { text-decoration: none; color: inherit; }
 }
 
 .browse-hint { margin: -6px 0 0; text-align: center; }
+/* ---------- SEO / GEO yüzeyleri ---------- */
+
+/* kategori ızgarasının içindeki başlık tüm satırı kaplasın */
+.cats-h {
+  grid-column: 1 / -1;
+  font-family: "Bricolage Grotesque", sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  margin: 8px 0 0;
+}
+
+/* SSS: cevaplar kaynak HTML'de açık — gizli metin GEO'da işe yaramıyor */
+.faq { display: flex; flex-direction: column; gap: 14px; }
+.faq h2 {
+  font-family: "Bricolage Grotesque", sans-serif;
+  font-size: 20px; font-weight: 700; margin: 20px 0 0;
+}
+.faq dl, .prose dl { margin: 0; display: flex; flex-direction: column; gap: 14px; }
+.qa {
+  border-left: 2px solid var(--line);
+  padding-left: 14px;
+}
+.qa dt { font-weight: 600; margin-bottom: 4px; }
+.qa dd { margin: 0; color: var(--ink-2); font-size: 14.5px; line-height: 1.55; }
+
+/* karşılaştırma / çürüme tabloları */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.decay-table {
+  width: 100%;
+  min-width: 460px;
+  border-collapse: collapse;
+  font-size: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.decay-table th, .decay-table td {
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.decay-table thead th {
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+.decay-table tbody th { font-weight: 600; white-space: nowrap; }
+.decay-table td { color: var(--ink-2); }
+.decay-table tr:last-child th, .decay-table tr:last-child td { border-bottom: 0; }
+
+/* dil seçici */
+.langs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+}
+.langs-label { color: var(--ink-3); }
+.lang { color: var(--ink-2); text-decoration: none; }
+.lang:hover { color: var(--accent); text-decoration: underline; }
+.lang--on { color: var(--accent); font-weight: 600; }
+
+.translated-note { padding-bottom: 24px; }
+
+.prose ol {
+  margin: 0;
+  padding-left: 1.15em;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--ink-2);
+}
+.prose h3 {
+  font-family: "Bricolage Grotesque", sans-serif;
+  font-size: 16px; font-weight: 700; margin: 12px 0 0;
+}
+.prose code {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.9em;
+  background: var(--accent-soft);
+  padding: 1px 5px;
+  border-radius: 5px;
+}

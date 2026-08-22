@@ -13,17 +13,26 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CONFIG, centsToUsd } from "@/lib/config";
 import CitySearch, { type Hit } from "./CitySearch";
+import { dict, localePath, type Locale } from "@/lib/i18n";
+import { CITY } from "@/lib/i18n/city";
+import { FORM } from "@/lib/i18n/forms";
 
 export default function ClaimForm({
   onPreview,
   paid,
+  locale = "en",
 }: {
   onPreview?: (id: string) => void;
   /** Faz sunucudan geliyor: PHASE bir NEXT_PUBLIC_ değişkeni değil, yani
    *  istemci paketinde okunamaz. */
   paid: boolean;
+  /** Çevrilmiş sayfalarda dil — etiketler ve şehir bağlantısı buradan. */
+  locale?: Locale;
 }) {
   const router = useRouter();
+  const t = dict(locale);
+  const f = FORM[locale];
+  const c = CITY[locale];
 
   const [link, setLink] = useState("");
   const [city, setCity] = useState<Hit | null>(null);
@@ -48,7 +57,7 @@ export default function ClaimForm({
   async function submitFounding(e: React.FormEvent) {
     e.preventDefault();
     if (state === "sending") return;
-    if (!city) { setError("Pick your city first."); return; }
+    if (!city) { setError(f.pickCityFirst); return; }
     setState("sending");
     setError(null);
     try {
@@ -59,7 +68,7 @@ export default function ClaimForm({
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Something went wrong.");
+        setError(data.error ?? f.errGeneric);
         setState("idle");
         return;
       }
@@ -67,7 +76,7 @@ export default function ClaimForm({
       setLink("");
       router.refresh();
     } catch {
-      setError("Couldn't reach the server. Try again.");
+      setError(f.errNetwork);
       setState("idle");
     }
   }
@@ -75,8 +84,8 @@ export default function ClaimForm({
   if (state === "done" && city) {
     return (
       <p className="ok" role="status">
-        You&apos;re on {city.name}. Your credit started decaying just now.{" "}
-        <a href={`/city/${city.id}`}>See the city →</a>
+        {f.done.replace("{city}", city.name)}{" "}
+        <a href={localePath(locale, `/city/${city.id}`)}>{f.seeCity}</a>
       </p>
     );
   }
@@ -88,7 +97,7 @@ export default function ClaimForm({
           type="button"
           className="citypick"
           onClick={() => setCity(null)}
-          title="Change city"
+          title={f.changeCity}
         >
           <span aria-hidden>{city.flag}</span>
           <b>{city.name}</b>
@@ -99,7 +108,7 @@ export default function ClaimForm({
           onPreview={onPreview}
           onPick={pick}
           clearOnPick
-          placeholder="Your city — Istanbul, Lagos, São Paulo…"
+          placeholder={f.cityPlaceholder}
         />
       )}
     </div>
@@ -114,19 +123,20 @@ export default function ClaimForm({
         action="/api/checkout"
         id="bid"
         onSubmit={(e) => {
-          if (!city) { e.preventDefault(); setError("Pick your city first."); }
+          if (!city) { e.preventDefault(); setError(f.pickCityFirst); }
         }}
       >
         <input type="hidden" name="city" value={city?.id ?? ""} />
         <input type="hidden" name="category" value="other" />
+        {locale !== "en" && <input type="hidden" name="lang" value={locale} />}
 
-        <label className="sr-only" htmlFor="claim-link">Your profile link or @handle</label>
+        <label className="sr-only" htmlFor="claim-link">{t.formLinkPlaceholder}</label>
         <input
           id="claim-link"
           name="link"
           value={link}
           onChange={(e) => setLink(e.target.value)}
-          placeholder="@yourhandle, a profile link, or yoursite.com"
+          placeholder={t.formLinkPlaceholder}
           autoComplete="off"
           spellCheck={false}
           required
@@ -136,7 +146,7 @@ export default function ClaimForm({
 
         <div className="amount-wrap">
           <span className="cur" aria-hidden>$</span>
-          <label className="sr-only" htmlFor="claim-amount">Bid amount in US dollars</label>
+          <label className="sr-only" htmlFor="claim-amount">{f.amountAria}</label>
           <input
             id="claim-amount"
             name="amount"
@@ -159,16 +169,12 @@ export default function ClaimForm({
         />
 
         <button type="submit" className="claim__go">
-          {city ? `Take ${city.name} →` : "Take your city →"}
+          {city ? c.cityTakeBtn.replace("{city}", city.name) : f.takeYourCity}
         </button>
 
         {error && <p className="err" role="alert">{error}</p>}
 
-        <p className="fine">
-          X, TikTok, Instagram, LinkedIn, YouTube, GitHub — or any link you own.
-          Min {centsToUsd(CONFIG.minBidCents)}, card checkout via Shopier, no
-          account. The biggest live payment in a city sits at the top of it.
-        </p>
+        <p className="fine">{t.bidFine}</p>
       </form>
     );
   }
@@ -176,12 +182,12 @@ export default function ClaimForm({
   // --- kuruluş fazı ---
   return (
     <form className="claim" onSubmit={submitFounding} id="bid">
-      <label className="sr-only" htmlFor="claim-link">Your profile link or @handle</label>
+      <label className="sr-only" htmlFor="claim-link">{t.formLinkPlaceholder}</label>
       <input
         id="claim-link"
         value={link}
         onChange={(e) => setLink(e.target.value)}
-        placeholder="@yourhandle, a profile link, or yoursite.com"
+        placeholder={t.formLinkPlaceholder}
         autoComplete="off"
         spellCheck={false}
         required

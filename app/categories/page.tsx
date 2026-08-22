@@ -1,16 +1,28 @@
 import type { Metadata } from "next";
 import { getBoard } from "@/lib/db";
 import { CATEGORIES } from "@/lib/categories";
-import { centsToUsd } from "@/lib/config";
+import { CONFIG, centsToUsd } from "@/lib/config";
+import { altLanguages } from "@/lib/i18n";
+import { breadcrumbLd, organizationLd } from "@/lib/seo";
+import Jsonld from "@/components/Jsonld";
 import Nav from "@/components/Nav";
+import LangSwitcher from "@/components/LangSwitcher";
+import Footer from "@/components/Footer";
 
 export const revalidate = 30;
 
 export const metadata: Metadata = {
-  title: "Categories",
+  title: "Categories — 27 decaying leaderboards, one per niche",
   description:
-    "Every category has its own decaying leaderboard. Pick one and outbid your way to the top of your niche.",
-  alternates: { canonical: "/categories" },
+    "Every category has its own pay-to-rank leaderboard. Pick a niche and outbid your way to the top — an unclaimed category costs the $5 minimum.",
+  alternates: { canonical: "/categories", languages: altLanguages("/categories") },
+  keywords: [
+    "leaderboard categories",
+    "niche ranking board",
+    "ai tools leaderboard",
+    "developer tools ranking",
+    "claim a category",
+  ],
 };
 
 export default async function Categories() {
@@ -28,6 +40,16 @@ export default async function Categories() {
 
   return (
     <main className="page">
+      <Jsonld
+        data={[
+          organizationLd(),
+          breadcrumbLd([
+            { name: CONFIG.siteName, url: CONFIG.url },
+            { name: "Categories", url: `${CONFIG.url}/categories` },
+          ]),
+        ]}
+      />
+
       <div className="topbar">
         <a className="brand" href="/">
           outbid<span className="tld">.love</span>
@@ -39,7 +61,8 @@ export default async function Categories() {
         <h1>Categories</h1>
         <p className="lede">
           Every category has its own ranking. Pick yours — an empty category
-          means <strong>#1 costs the minimum bid</strong>.
+          means <strong>#1 costs the minimum bid</strong> of{" "}
+          {centsToUsd(CONFIG.minBidCents)}.
         </p>
       </header>
 
@@ -64,9 +87,9 @@ export default async function Categories() {
         })}
       </section>
 
-      <footer className="foot">
-        <a href="/">← Back to the board</a>
-      </footer>
+      <LangSwitcher locale="en" path="/categories" />
+
+      <Footer />
     </main>
   );
 }

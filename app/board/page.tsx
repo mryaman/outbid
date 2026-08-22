@@ -8,14 +8,26 @@ import DecayMeter from "@/components/DecayMeter";
 import LiveStats from "@/components/LiveStats";
 import CitySearch from "@/components/CitySearch";
 import Footer from "@/components/Footer";
+import Jsonld from "@/components/Jsonld";
+import LangSwitcher from "@/components/LangSwitcher";
+import { altLanguages } from "@/lib/i18n";
+import { CITY } from "@/lib/i18n/city";
+import { breadcrumbLd, leaderboardLd, organizationLd } from "@/lib/seo";
 
 export const revalidate = 15;
 
 export const metadata: Metadata = {
-  title: "World board",
+  title: "World board — every listing, every city",
   description:
-    "Every listing on outbid.love, from every city, ranked by what is still burning. Bids decay 10% a day.",
-  alternates: { canonical: "/board" },
+    "Every listing on outbid.love, from every city, ranked by what is still burning. Every payment decays 10% a day, so the order changes even when nobody bids.",
+  alternates: { canonical: "/board", languages: altLanguages("/board") },
+  keywords: [
+    "global leaderboard",
+    "pay to rank world board",
+    "outbid.lol alternative",
+    "decaying leaderboard",
+    "promote your profile",
+  ],
 };
 
 export default async function BoardPage() {
@@ -25,6 +37,21 @@ export default async function BoardPage() {
 
   return (
     <main className="page">
+      <Jsonld
+        data={[
+          organizationLd(),
+          leaderboardLd(board, {
+            name: CITY.en.boardTitle,
+            url: `${CONFIG.url}/board`,
+            lang: "en",
+          }),
+          breadcrumbLd([
+            { name: CONFIG.siteName, url: CONFIG.url },
+            { name: "World board", url: `${CONFIG.url}/board` },
+          ]),
+        ]}
+      />
+
       <header className="hero">
         <div className="topbar">
           <a className="brand" href="/">
@@ -77,6 +104,8 @@ export default async function BoardPage() {
         </p>
         <DecayMeter startCents={topCents} />
       </section>
+
+      <LangSwitcher locale="en" path="/board" />
 
       <Footer listings={stats.listings} />
     </main>

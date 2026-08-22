@@ -1,15 +1,46 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CATEGORIES } from "@/lib/categories";
+
+/**
+ * Kuruluş fazı formu.
+ *
+ * Kategori formda SORULMUYOR (kullanıcı isteği): kategori sayfasındaki
+ * "burayı kap" bağlantısı ?cat=<slug> taşır, doğrudan gelenler "other".
+ *
+ * `labels` çevrilmiş sayfalardan geçirilir; verilmezse İngilizce.
+ */
+
+export type SubmitLabels = {
+  linkAria: string;
+  linkPlaceholder: string;
+  submit: string;
+  sending: string;
+  /** {city} */
+  done: string;
+  errGeneric: string;
+  errNetwork: string;
+};
+
+const EN: SubmitLabels = {
+  linkAria: "Your link or X handle",
+  linkPlaceholder: "@yourhandle, a profile link, or yoursite.com",
+  submit: "Claim a spot",
+  sending: "Claiming…",
+  done: "You're on {city}. Your credit started decaying just now.",
+  errGeneric: "Something went wrong.",
+  errNetwork: "Couldn't reach the server. Try again.",
+};
 
 export default function SubmitForm({
   cityId,
   cityName,
+  labels = EN,
 }: {
   cityId: string;
   cityName?: string;
+  labels?: SubmitLabels;
 }) {
   const router = useRouter();
   const [link, setLink] = useState("");
@@ -17,6 +48,12 @@ export default function SubmitForm({
   const [website, setWebsite] = useState(""); // honeypot
   const [state, setState] = useState<"idle" | "sending" | "done">("idle");
   const [error, setError] = useState<string | null>(null);
+
+  // Kategori sayfasındaki "burayı kap" bağlantısı ?cat=<slug> taşır.
+  useEffect(() => {
+    const c = new URLSearchParams(window.location.search).get("cat");
+    if (c && /^[a-z0-9-]{1,40}$/.test(c)) setCategory(c);
+  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -33,7 +70,7 @@ export default function SubmitForm({
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error ?? "Something went wrong.");
+        setError(data.error ?? labels.errGeneric);
         setState("idle");
         return;
       }
@@ -41,7 +78,7 @@ export default function SubmitForm({
       setLink("");
       router.refresh();
     } catch {
-      setError("Couldn't reach the server. Try again.");
+      setError(labels.errNetwork);
       setState("idle");
     }
   }
@@ -49,8 +86,7 @@ export default function SubmitForm({
   if (state === "done") {
     return (
       <p className="ok" role="status">
-        You&apos;re on {cityName ?? "the board"}. Your credit started decaying
-        just now.
+        {labels.done.replace("{city}", cityName ?? "the board")}
       </p>
     );
   }
@@ -58,33 +94,18 @@ export default function SubmitForm({
   return (
     <form className="form" onSubmit={submit}>
       <label className="sr-only" htmlFor="link">
-        Your link or X handle
+        {labels.linkAria}
       </label>
       <input
         id="link"
         name="link"
         value={link}
         onChange={(e) => setLink(e.target.value)}
-        placeholder="@yourhandle, a profile link, or yoursite.com"
+        placeholder={labels.linkPlaceholder}
         autoComplete="off"
         spellCheck={false}
         required
       />
-      <label className="sr-only" htmlFor="category">
-        Category
-      </label>
-      <select
-        id="category"
-        className="cat-select"
-        value={category}
-        onChange={(e) => setCategory(e.target.value)}
-      >
-        {CATEGORIES.map((c) => (
-          <option key={c.slug} value={c.slug}>
-            {c.name}
-          </option>
-        ))}
-      </select>
       <input
         tabIndex={-1}
         autoComplete="off"
@@ -94,7 +115,7 @@ export default function SubmitForm({
         onChange={(e) => setWebsite(e.target.value)}
       />
       <button type="submit" disabled={state === "sending"}>
-        {state === "sending" ? "Claiming…" : "Claim a spot"}
+        {state === "sending" ? labels.sending : labels.submit}
       </button>
       {error && (
         <p className="err" role="alert">

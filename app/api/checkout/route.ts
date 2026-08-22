@@ -17,8 +17,10 @@ export const dynamic = "force-dynamic";
  * Bid SADECE webhook'ta yazılır — burada yalnızca pending_payments oluşur.
  */
 
-function back(citySlug: string, code: string, extra = ""): NextResponse {
-  const base = citySlug ? `${siteUrl()}/city/${citySlug}` : siteUrl();
+/** Hata dönüşü — kullanıcı hangi dildeki sayfadan geldiyse oraya. */
+function back(citySlug: string, code: string, extra = "", lang = ""): NextResponse {
+  const root = `${siteUrl()}${lang}`;
+  const base = citySlug ? `${root}/city/${citySlug}` : root || siteUrl();
   return NextResponse.redirect(`${base}?err=${encodeURIComponent(code)}${extra}#bid`, 303);
 }
 
@@ -29,6 +31,8 @@ function clientIp(req: Request): string {
 
 export async function POST(req: Request) {
   let link = "", amountRaw = "", honeypot = "", category = "other", citySlug = "";
+  // Çevrilmiş sayfalardan gelen gizli alan: hata dönüşü aynı dile gitsin.
+  let lang = "";
   try {
     const form = await req.formData();
     link = String(form.get("link") ?? "");
@@ -37,35 +41,37 @@ export async function POST(req: Request) {
     citySlug = String(form.get("city") ?? "");
     const c = String(form.get("category") ?? "other");
     category = isValidCategory(c) ? c : "other";
+    const lg = String(form.get("lang") ?? "");
+    if (/^[a-z]{2}$/.test(lg) && lg !== "en") lang = `/${lg}`;
   } catch {
     return back("", "bad_request");
   }
 
-  if (CONFIG.phase !== "paid") return back(citySlug, "closed");
+  if (CONFIG.phase !== "paid") return back(citySlug, "closed", "", lang);
   if (honeypot) return NextResponse.redirect(siteUrl(), 303);
 
   // Şehir gömülü GeoNames listesinden doğrulanır.
   const city = getCity(citySlug);
-  if (!city) return back("", "unknown_city");
+  if (!city) return back("", "unknown_city", "", lang);
 
   let n;
   try {
     n = normalizeInput(link);
   } catch (e) {
-    return back(city.id, "bad_link", `&m=${encodeURIComponent(e instanceof Error ? e.message : "")}`);
+    return back(city.id, "bad_link", `&m=${encodeURIComponent(e instanceof Error ? e.message : "")}`, lang);
   }
 
   const cents = moneyToCents(amountRaw);
   if (cents === null || cents < CONFIG.minBidCents || cents > CONFIG.maxBidCents) {
-    return back(city.id, "bad_amount");
+    return back(city.id, "bad_amount", "", lang);
   }
 
-  if (!process.env.SHOPIER_PAT) return back(city.id, "not_configured");
+  if (!process.env.SHOPIER_PAT) return back(city.id, "not_configured", "", lang);
 
   // Shopier mağazası yalnızca TRY tahsil edebiliyor: teklif USD, tahsilat
   // anlık kurdan TL. Kur alınamazsa ödeme başlatılmaz (yanlış tutar riski).
   const rate = await getUsdTryRate();
-  if (!rate) return back(city.id, "provider_error");
+  if (!rate) return back(city.id, "provider_error", "", lang);
   const tryCents = Math.ceil((cents * rate) / 100) * 100; // tam TL'ye yukarı yuvarla
   const tryAmount = (tryCents / 100).toFixed(2);
 
@@ -103,7 +109,7 @@ export async function POST(req: Request) {
       e,
       JSON.stringify((e as { details?: unknown })?.details ?? null)
     );
-    return back(city.id, "provider_error");
+    return back(city.id, "provider_error", "", lang);
   }
 
   // 2) Beklemedeki ödemeyi kaydet (webhook bununla eşleşecek)
@@ -129,7 +135,7 @@ export async function POST(req: Request) {
     } catch {
       /* best effort */
     }
-    return back(city.id, pending.error);
+    return back(city.id, pending.error, "", lang);
   }
 
   // 3) Tarayıcıyı Shopier'e gönder

@@ -3,7 +3,13 @@ import { notFound } from "next/navigation";
 import { getBoard } from "@/lib/db";
 import { CATEGORIES, categoryName, isValidCategory } from "@/lib/categories";
 import { CONFIG, centsToUsd } from "@/lib/config";
+import { altLanguages } from "@/lib/i18n";
+import { ROW_LABELS } from "@/lib/i18n/row";
+import { breadcrumbLd, leaderboardLd, organizationLd } from "@/lib/seo";
+import Jsonld from "@/components/Jsonld";
 import Nav from "@/components/Nav";
+import LangSwitcher from "@/components/LangSwitcher";
+import Footer from "@/components/Footer";
 import Row from "@/components/Row";
 
 export const revalidate = 15;
@@ -19,10 +25,20 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const name = categoryName(slug);
+  const path = `/categories/${slug}`;
   return {
     title: `${name} leaderboard`,
-    description: `Who leads ${name} right now? Bid any amount to take the top spot — every bid decays 10% a day, so #1 is always winnable.`,
-    alternates: { canonical: `/categories/${slug}` },
+    description: `Who leads ${name} right now? Bid any amount to take the top spot — every bid decays 10% a day, so #1 is always winnable. Unclaimed categories start at ${centsToUsd(
+      CONFIG.minBidCents
+    )}.`,
+    alternates: { canonical: path, languages: altLanguages(path) },
+    keywords: [
+      `${name} leaderboard`,
+      `best ${name.toLowerCase()}`,
+      `top ${name.toLowerCase()} ranking`,
+      "pay to rank",
+      "outbid.lol alternative",
+    ],
   };
 }
 
@@ -36,9 +52,28 @@ export default async function CategoryPage({
 
   const board = await getBoard(100, { category: slug });
   const name = categoryName(slug);
+  const path = `/categories/${slug}`;
+  const claimPrice =
+    board.length > 0 ? centsToUsd(board[0].effective_cents + 1) : centsToUsd(CONFIG.minBidCents);
 
   return (
     <main className="page">
+      <Jsonld
+        data={[
+          organizationLd(),
+          leaderboardLd(board, {
+            name: `${name} leaderboard`,
+            url: `${CONFIG.url}${path}`,
+            lang: "en",
+          }),
+          breadcrumbLd([
+            { name: CONFIG.siteName, url: CONFIG.url },
+            { name: "Categories", url: `${CONFIG.url}/categories` },
+            { name, url: `${CONFIG.url}${path}` },
+          ]),
+        ]}
+      />
+
       <div className="topbar">
         <a className="brand" href="/">
           outbid<span className="tld">.love</span>
@@ -52,19 +87,18 @@ export default async function CategoryPage({
           {board.length > 0 ? (
             <>
               {board.length} {board.length === 1 ? "listing" : "listings"} —
-              taking #1 costs{" "}
-              <strong>{centsToUsd(board[0].effective_cents + 1)}</strong> right
-              now, and it drops by the hour.
+              taking #1 costs <strong>{claimPrice}</strong> right now, and it
+              drops by the hour.
             </>
           ) : (
             <>
               Nobody has claimed this category yet.{" "}
-              <strong>#1 costs {centsToUsd(CONFIG.minBidCents)}.</strong>
+              <strong>#1 costs {claimPrice}.</strong>
             </>
           )}
         </p>
         <p className="fine">
-          <a href="/#bid">Place a bid on the main board →</a>
+          <a href={`/board?cat=${slug}`}>Claim a spot in {name} →</a>
         </p>
       </header>
 
@@ -79,17 +113,31 @@ export default async function CategoryPage({
               row={r}
               nextCents={board[i + 1]?.effective_cents ?? 0}
               canOutbid={CONFIG.phase === "paid"}
+              labels={ROW_LABELS.en}
               showCity
             />
           ))
         )}
       </section>
 
-      <footer className="foot">
-        <a href="/categories">← All categories</a>
-        <span aria-hidden>·</span>
-        <a href="/">Main board</a>
-      </footer>
+      <section className="prose">
+        <h2>How ranking in {name} works</h2>
+        <p>
+          This category is its own leaderboard. Your position is the amount you
+          have paid, decayed by {Math.round((1 - CONFIG.decayPerDay) * 100)}% for
+          every day since the payment cleared, so the price of the top spot in{" "}
+          {name} falls continuously until somebody tops up. Bids are placed
+          inside a city — pick yours on the{" "}
+          <a href="/">globe</a> — and a category with no listings can be claimed
+          for the {centsToUsd(CONFIG.minBidCents)} minimum. See{" "}
+          <a href="/how-it-works">how it works</a> for the maths, or the{" "}
+          <a href="/faq">FAQ</a> for the practical questions.
+        </p>
+      </section>
+
+      <LangSwitcher locale="en" path={path} />
+
+      <Footer />
     </main>
   );
 }

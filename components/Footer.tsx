@@ -1,21 +1,30 @@
 import { CONFIG } from "@/lib/config";
+import { dict, fill, type Locale } from "@/lib/i18n";
 
-export default function Footer({ listings }: { listings?: number }) {
+export default function Footer({
+  listings,
+  locale = "en",
+}: {
+  listings?: number;
+  locale?: Locale;
+}) {
+  const t = dict(locale).footer;
+
   return (
     <footer className="foot">
-      <a href="/rules">Rules</a>
+      <a href="/rules">{t.rules}</a>
       <span aria-hidden>·</span>
-      <a href="/price">Pricing</a>
+      <a href="/price">{t.pricing}</a>
       <span aria-hidden>·</span>
-      <a href="/terms">Terms</a>
+      <a href="/terms">{t.terms}</a>
       <span aria-hidden>·</span>
-      <a href="/privacy">Privacy</a>
+      <a href="/privacy">{t.privacy}</a>
       <span aria-hidden>·</span>
-      <a href="/policy">Refunds</a>
+      <a href="/policy">{t.refunds}</a>
       {typeof listings === "number" && (
         <>
           <span aria-hidden>·</span>
-          <span>{listings} listings</span>
+          <span>{fill(t.listings, { n: listings })}</span>
         </>
       )}
       <span aria-hidden>·</span>
@@ -27,7 +36,7 @@ export default function Footer({ listings }: { listings?: number }) {
         target="_blank"
         rel="noopener"
       >
-        Live traffic
+        {t.traffic}
       </a>
     </footer>
   );

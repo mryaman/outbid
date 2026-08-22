@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getCityBoard, getCityLeague } from "@/lib/db";
-import { getCity, flagOf, topCities } from "@/lib/cities";
+import { getCity, flagOf, topCities, CITIES } from "@/lib/cities";
+import { altLanguages, dict, fill } from "@/lib/i18n";
+import { CITY } from "@/lib/i18n/city";
+import { breadcrumbLd, cityLd, faqLd, leaderboardLd, organizationLd } from "@/lib/seo";
+import Jsonld from "@/components/Jsonld";
+import Faq from "@/components/Faq";
+import LangSwitcher from "@/components/LangSwitcher";
 import { CONFIG, centsToUsd } from "@/lib/config";
 import Nav from "@/components/Nav";
 import Row from "@/components/Row";
@@ -30,9 +36,19 @@ export async function generateMetadata({
   const city = getCity(slug);
   if (!city) return { title: "City not found" };
   return {
-    title: `${city.name} leaderboard`,
-    description: `Who is #1 in ${city.name}, ${city.country}? Put your X, TikTok, Instagram, LinkedIn or your own link on ${city.name} — the biggest live payment takes the top of the city.`,
-    alternates: { canonical: `/city/${city.id}` },
+    title: `Who is #1 in ${city.name}?`,
+    description: `The live leaderboard of ${city.name}, ${city.country}. Put your X, TikTok, Instagram, LinkedIn or your own link on ${city.name} — the biggest live payment takes the top of the city.`,
+    keywords: [
+      `who is number 1 in ${city.name}`,
+      `${city.name} leaderboard`,
+      `${city.name} ranking`,
+      `promote your profile in ${city.name}`,
+      `top profiles ${city.name}`,
+    ],
+    alternates: {
+      canonical: `/city/${city.id}`,
+      languages: altLanguages(`/city/${city.id}`),
+    },
     openGraph: {
       title: `${city.name} — outbid.love`,
       description: `The people leaderboard of ${city.name}. Every payment decays 10% a day.`,
@@ -100,8 +116,43 @@ export default async function CityPage({
       })),
   ];
 
+  const t = dict("en");
+  const c = CITY.en;
+  const vars = {
+    city: city.name,
+    country: city.country,
+    price: centsToUsd(takeTop),
+    min: centsToUsd(CONFIG.minBidCents),
+    pct: Math.round((1 - CONFIG.decayPerDay) * 100),
+    n: CITIES.length.toLocaleString("en-US"),
+  };
+  const localFaq = c.cityFaq.map((f) => ({ q: fill(f.q, vars), a: fill(f.a, vars) }));
+  const cityUrl = `${CONFIG.url}/city/${city.id}`;
+
   return (
     <main className="page">
+      <Jsonld
+        data={[
+          organizationLd(),
+          cityLd(city, {
+            url: cityUrl,
+            lang: "en",
+            description: fill(c.cityMetaDesc, vars),
+          }),
+          leaderboardLd(board, {
+            name: `Who is #1 in ${city.name}?`,
+            url: cityUrl,
+            lang: "en",
+          }),
+          faqLd(localFaq, "en"),
+          breadcrumbLd([
+            { name: CONFIG.siteName, url: CONFIG.url },
+            { name: city.country, url: CONFIG.url },
+            { name: city.name, url: cityUrl },
+          ]),
+        ]}
+      />
+
       <div className="topbar">
         <a className="brand" href="/">
           outbid<span className="tld">.love</span>
@@ -199,10 +250,19 @@ export default async function CityPage({
         )}
       </section>
 
+      <section className="prose">
+        <h2>Who is #1 in {city.name}?</h2>
+        <p>{fill(c.cityIntro, vars)}</p>
+      </section>
+
+      <Faq items={localFaq} title={`${city.name} — questions`} id="city-faq" />
+
       <section className="explain">
         <h2>Somewhere else?</h2>
         <CitySearch placeholder={`Jump to another city…`} />
       </section>
+
+      <LangSwitcher locale="en" path={`/city/${city.id}`} />
 
       <Footer />
     </main>
