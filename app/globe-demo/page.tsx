@@ -51,7 +51,7 @@ export default function GlobeDemo() {
   return (
     <main className="page page--wide">
       <h1>Globe preview</h1>
-      <GlobeSection cities={cities} />
+      <GlobeSection cities={cities} paid />
       <LeagueTable rows={rows} />
     </main>
   );
