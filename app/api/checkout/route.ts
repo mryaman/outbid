@@ -3,7 +3,7 @@ import { CONFIG, centsToUsd } from "@/lib/config";
 import { normalizeInput } from "@/lib/normalize";
 import { isValidCategory } from "@/lib/categories";
 import { createPendingPayment } from "@/lib/db";
-import { shopierClient, shopierFlow, siteUrl, moneyToCents } from "@/lib/shopier";
+import { shopierClient, shopierFlow, siteUrl, moneyToCents, getUsdTryRate } from "@/lib/shopier";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -56,6 +56,13 @@ export async function POST(req: Request) {
 
   if (!process.env.SHOPIER_PAT) return back("not_configured");
 
+  // Shopier mağazası yalnızca TRY tahsil edebiliyor: teklif USD, tahsilat
+  // anlık kurdan TL. Kur alınamazsa ödeme başlatılmaz (yanlış tutar riski).
+  const rate = await getUsdTryRate();
+  if (!rate) return back("provider_error");
+  const tryCents = Math.ceil((cents * rate) / 100) * 100; // tam TL'ye yukarı yuvarla
+  const tryAmount = (tryCents / 100).toFixed(2);
+
   const orderRef =
     "OL" +
     Date.now().toString(36).toUpperCase() +
@@ -67,10 +74,10 @@ export async function POST(req: Request) {
     payment = await shopierFlow().createPaymentLink({
       title: `${CONFIG.siteName} bid — ${n.title}`.slice(0, 100),
       description:
-        `Bid of ${centsToUsd(cents)} for "${n.title}" on ${CONFIG.siteName}. ` +
+        `Bid of ${centsToUsd(cents)} (₺${tryAmount}) for "${n.title}" on ${CONFIG.siteName}. ` +
         `Order ${orderRef}. The bid goes live automatically after payment.`,
-      amount: (cents / 100).toFixed(2),
-      currency: "USD",
+      amount: tryAmount,
+      currency: "TRY",
       productType: "digital",
       imageUrl: `${siteUrl()}/og.png`,
       customNote: `Your bid is live. See the board: ${siteUrl()}/?paid=1`,
@@ -79,7 +86,11 @@ export async function POST(req: Request) {
       shopSlug: process.env.SHOPIER_SHOP_SLUG,
     });
   } catch (e) {
-    console.error("shopier create failed", e);
+    console.error(
+      "shopier create failed",
+      e,
+      JSON.stringify((e as { details?: unknown })?.details ?? null)
+    );
     return back("provider_error");
   }
 
@@ -93,6 +104,7 @@ export async function POST(req: Request) {
     title: n.title,
     iconUrl: n.iconUrl,
     amountCents: cents,
+    amountTryCents: tryCents,
     ip: clientIp(req),
     category,
   });
