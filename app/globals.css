@@ -375,3 +375,246 @@ a.brand { text-decoration: none; color: inherit; }
 .cat-name { font-weight: 600; }
 .cat-sub { font-size: 12.5px; color: var(--ink-3); }
 .cat-sub--empty { color: var(--accent); }
+
+/* =====================================================================
+   Dünya — küre, arama, şehirler ligi
+   ===================================================================== */
+
+.page--wide { max-width: 860px; }
+
+.globe-section { display: flex; flex-direction: column; gap: 14px; }
+
+.globe {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 11;
+  max-height: 620px;
+  border-radius: 20px;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 50% 8%, #131a2e 0%, #080a12 55%, #05060a 100%);
+  border: 1px solid var(--line);
+  box-shadow: 0 30px 80px -40px rgba(0, 0, 0, 0.8);
+  isolation: isolate;
+}
+
+.globe--small { aspect-ratio: 16 / 8; max-height: 340px; }
+.globe-wrap--small .globe { aspect-ratio: 16 / 8; max-height: 340px; }
+
+.globe--skeleton {
+  background:
+    radial-gradient(120% 90% at 50% 8%, #131a2e 0%, #080a12 55%, #05060a 100%);
+}
+
+.globe__canvas { position: absolute; inset: 0; }
+
+.globe__loading {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  color: #6f7ea8; font-size: 13px; letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.globe__modes {
+  position: absolute; right: 12px; top: 12px;
+  display: flex; gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(10, 14, 26, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(8px);
+}
+
+.globe__modes button {
+  appearance: none; border: 0; cursor: pointer;
+  background: transparent;
+  color: #93a2c4;
+  font: inherit; font-size: 12px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  line-height: 1;
+}
+
+.globe__modes button.is-on {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.globe__tip {
+  position: absolute;
+  transform: translate(-50%, -140%);
+  pointer-events: none;
+  background: rgba(8, 11, 20, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #eef2ff;
+  padding: 7px 11px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  line-height: 1.35;
+  white-space: nowrap;
+  display: flex; flex-direction: column; gap: 1px;
+  z-index: 2;
+}
+.globe__tip span { color: #9fb0d4; font-size: 11.5px; }
+
+/* ---------- şehir araması ---------- */
+
+.csearch { position: relative; }
+
+.csearch input {
+  width: 100%;
+  padding: 14px 16px;
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  outline: none;
+}
+.csearch input:focus { border-color: var(--accent); }
+
+.csearch__list {
+  position: absolute; z-index: 5; left: 0; right: 0; top: calc(100% + 6px);
+  margin: 0; padding: 6px; list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.6);
+  max-height: 340px; overflow-y: auto;
+}
+
+.csearch__list button {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; text-align: left;
+  padding: 9px 10px; border: 0; border-radius: 8px;
+  background: transparent; color: var(--ink);
+  font: inherit; cursor: pointer;
+}
+.csearch__list button.is-active { background: var(--surface-2); }
+
+.csearch__flag { font-size: 18px; line-height: 1; }
+.csearch__name { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.csearch__country { font-size: 12px; color: var(--ink-3); }
+.csearch__amt { font-variant-numeric: tabular-nums; color: var(--ink-2); font-size: 13px; }
+
+/* ---------- rakamlar ---------- */
+
+.globe-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+}
+.globe-stats div {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 14px 16px;
+  border: 1px solid var(--line); border-radius: 12px;
+  background: var(--surface);
+}
+.globe-stats strong { font-size: 22px; font-variant-numeric: tabular-nums; }
+.globe-stats span { font-size: 12.5px; color: var(--ink-3); }
+
+/* ---------- şehirler ligi ---------- */
+
+.section-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
+.section-head h2 { margin: 0; font-size: 20px; }
+
+.league { display: flex; flex-direction: column; }
+
+.lrow {
+  display: grid;
+  grid-template-columns: 44px 30px 1fr auto;
+  align-items: center; gap: 12px;
+  padding: 13px 4px;
+  border-bottom: 1px solid var(--line);
+  text-decoration: none; color: inherit;
+}
+.lrow:hover { background: var(--surface-2); }
+.lflag { font-size: 21px; line-height: 1; }
+.lcountry { font-size: 12px; color: var(--ink-3); margin-left: 8px; font-weight: 400; }
+.ltop { color: var(--ink-2); }
+
+/* ---------- şehir sayfası ---------- */
+
+.crumb { margin: 0; font-size: 13px; color: var(--ink-3); }
+.crumb a { color: var(--ink-2); }
+.city-hero h1 { display: flex; align-items: center; gap: 12px; }
+.cityflag { font-size: 34px; line-height: 1; }
+
+.city-facts {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  margin-top: 6px;
+}
+.city-facts div {
+  display: flex; flex-direction: column;
+  padding: 12px 14px;
+  border: 1px solid var(--line); border-radius: 12px;
+}
+.city-facts strong { font-size: 19px; font-variant-numeric: tabular-nums; }
+.city-facts span { font-size: 12px; color: var(--ink-3); }
+
+/* ---------- platform rozetleri ---------- */
+
+.plat {
+  margin-left: 8px;
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 6px; border-radius: 5px;
+  background: var(--surface-2); color: var(--ink-3);
+  vertical-align: middle;
+}
+.plat--x { background: #15151a; color: #fff; }
+.plat--instagram { background: linear-gradient(45deg, #f9ce34, #ee2a7b, #6228d7); color: #fff; }
+.plat--tiktok { background: #010101; color: #25f4ee; }
+.plat--linkedin { background: #0a66c2; color: #fff; }
+.plat--youtube { background: #ff0000; color: #fff; }
+.plat--github { background: #24292f; color: #fff; }
+
+.icon--badge {
+  display: grid; place-items: center;
+  width: 40px; height: 40px; border-radius: 10px;
+  font-size: 13px; font-weight: 700; letter-spacing: -0.02em;
+  background: var(--surface-2); color: var(--ink-2);
+}
+.icon--tiktok { background: #010101; color: #25f4ee; }
+.icon--linkedin { background: #0a66c2; color: #fff; }
+
+.citychip {
+  padding: 1px 7px; border-radius: 999px;
+  background: var(--accent-soft); color: var(--accent);
+  font-size: 11.5px; font-weight: 600;
+}
+
+/* ---------- adımlar ---------- */
+
+.steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 10px; }
+.steps li { color: var(--ink-2); }
+.steps strong { color: var(--ink); }
+
+@media (max-width: 560px) {
+  .globe { aspect-ratio: 1 / 1; border-radius: 16px; }
+  .globe-stats, .city-facts { grid-template-columns: 1fr; }
+  .lrow { grid-template-columns: 36px 24px 1fr auto; gap: 8px; }
+}
+
+/* ---------- küre üzerindeki şehir etiketleri ---------- */
+
+.globe__labels { position: absolute; inset: 0; pointer-events: none; }
+
+.globe__label {
+  position: absolute; top: 0; left: 0;
+  display: flex; align-items: baseline; gap: 7px;
+  padding: 4px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(8, 11, 20, 0.66);
+  backdrop-filter: blur(6px);
+  color: #f4f7ff;
+  font: inherit; font-size: 12px; line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: opacity 0.25s ease;
+}
+.globe__label b { font-weight: 600; }
+.globe__label i { font-style: normal; color: #ff9dbb; font-variant-numeric: tabular-nums; }
+.globe__label.is-top { border-color: rgba(255, 194, 71, 0.55); }
+.globe__label.is-top i { color: #ffc247; }
+.globe__label:hover { background: rgba(20, 26, 44, 0.9); }

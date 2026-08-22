@@ -1,27 +1,58 @@
-import { getBoard, getStats } from "@/lib/db";
+import { getCityLeague, getStats } from "@/lib/db";
+import { topCities } from "@/lib/cities";
 import { CONFIG, centsToUsd } from "@/lib/config";
-import SubmitForm from "@/components/SubmitForm";
-import BidForm from "@/components/BidForm";
-import Banner from "@/components/Banner";
+import GlobeSection from "@/components/GlobeSection";
+import LeagueTable from "@/components/LeagueTable";
+import type { GlobeCity } from "@/components/GlobeView";
 import Nav from "@/components/Nav";
-import DecayMeter from "@/components/DecayMeter";
 import LiveStats from "@/components/LiveStats";
-import Row from "@/components/Row";
+import Footer from "@/components/Footer";
 
-// The board refreshes every 15s. The live feel comes from the decay
-// ticking in the browser, not from hammering the database.
 export const revalidate = 15;
 
-export default async function Home() {
-  const [board, stats] = await Promise.all([getBoard(100), getStats()]);
+export const metadata = {
+  title: "outbid.love — the city leaderboard of the world",
+  description:
+    "Pick your city, put your X, TikTok, Instagram, LinkedIn or your own link on it, and pay to sit at #1. Every payment decays 10% a day, so the top is always winnable.",
+  alternates: { canonical: "/" },
+};
 
-  const slots = stats.slots || CONFIG.foundingSlots;
-  const remaining = Math.max(0, slots - stats.listings);
-  const topCents = board[0]?.effective_cents ?? 10000;
+export default async function Home() {
+  const [league, stats] = await Promise.all([getCityLeague(200), getStats()]);
+
+  const activeIds = new Set(league.map((l) => l.id));
+  const cities: GlobeCity[] = [
+    ...league.map((l) => ({
+      id: l.id,
+      name: l.name,
+      country: l.country,
+      cc: l.country_code,
+      lat: l.lat,
+      lon: l.lon,
+      cents: l.effective_cents,
+      listings: l.listings,
+      rank: l.league_rank,
+    })),
+    ...topCities(240)
+      .filter((c) => !activeIds.has(c.id))
+      .map((c) => ({
+        id: c.id,
+        name: c.name,
+        country: c.country,
+        cc: c.cc,
+        lat: c.lat,
+        lon: c.lon,
+        cents: 0,
+        listings: 0,
+        rank: 0,
+      })),
+  ];
+
+  const total = league.reduce((s, l) => s + l.effective_cents, 0);
   const decayPct = Math.round((1 - CONFIG.decayPerDay) * 100);
 
   return (
-    <main className="page">
+    <main className="page page--wide">
       <header className="hero">
         <div className="topbar">
           <span className="brand">
@@ -31,108 +62,70 @@ export default async function Home() {
         </div>
         <Nav current="/" />
 
-        <h1>The top is always winnable.</h1>
+        <h1>Every city has a #1. Take yours.</h1>
         <p className="lede">
-          Your rank is whatever you paid — but every payment{" "}
-          <strong>decays {decayPct}% a day</strong>. Nobody sits at the top
-          forever, and the board never freezes.
+          Put your X, TikTok, Instagram, LinkedIn — or any link you own — on a
+          city. The biggest payment in that city sits at the top of it. Every
+          payment <strong>decays {decayPct}% a day</strong>, so no one holds a
+          city forever.
         </p>
-
-        <Banner />
-
-        {CONFIG.phase === "paid" ? (
-          <div className="founding">
-            <span className="pill">Live bidding</span>
-            <p>
-              Put your link on the board — or outbid the one above you. You pay
-              exactly what you bid, once.
-            </p>
-            <BidForm topCents={board[0]?.effective_cents ?? 0} />
-            <p className="fine">
-              Your product site or your X handle. No account, no email — card
-              checkout via Shopier.
-            </p>
-          </div>
-        ) : remaining > 0 ? (
-          <div className="founding">
-            <span className="pill">Founding roster</span>
-            <p>
-              The first {slots} listings are free and start with{" "}
-              {centsToUsd(CONFIG.foundingCents)} of credit.{" "}
-              <strong>{remaining} left.</strong>
-            </p>
-            <SubmitForm />
-            <p className="fine">
-              Your product site or your X handle. No account, no email.
-            </p>
-          </div>
-        ) : (
-          <div className="founding">
-            <span className="pill">Roster full</span>
-            <p>
-              All {slots} founding spots are taken. Paid bidding
-              opens soon — until then the board keeps decaying.
-            </p>
-          </div>
-        )}
       </header>
 
-      <section className="board" aria-label="Leaderboard">
-        {board.length === 0 ? (
-          <p className="empty">The board is empty. Claim the first spot.</p>
-        ) : (
-          board.map((r, i) => (
-            <Row
-              key={r.id}
-              rank={i + 1}
-              row={r}
-              nextCents={board[i + 1]?.effective_cents ?? 0}
-              canOutbid={CONFIG.phase === "paid"}
-            />
-          ))
-        )}
+      <GlobeSection cities={cities} />
+
+      <section className="globe-stats" aria-label="Live totals">
+        <div>
+          <strong>{league.length}</strong>
+          <span>cities in play</span>
+        </div>
+        <div>
+          <strong>{stats.listings}</strong>
+          <span>profiles listed</span>
+        </div>
+        <div>
+          <strong>{centsToUsd(total)}</strong>
+          <span>live on the map</span>
+        </div>
+      </section>
+
+      <section className="board" aria-label="City league">
+        <div className="section-head">
+          <h2>The city league</h2>
+          <p className="fine">
+            Ranked by everything still burning in each city — busiest at the
+            top, quietest at the bottom.
+          </p>
+        </div>
+        <LeagueTable rows={league} />
       </section>
 
       <section className="explain">
-        <h2>How decay works</h2>
-        <p>
-          Every payment loses {decayPct}% of its value per day, counted from the
-          moment it was made. {centsToUsd(10000)} is worth{" "}
-          {centsToUsd(4783)} after a week and {centsToUsd(2288)} after two.
-          Once a listing drops below {centsToUsd(CONFIG.dropoutCents)} it leaves
-          the board.
-        </p>
-        <DecayMeter startCents={topCents} />
-        <p className="fine">
-          This is the whole product. Rank is a running cost, not a purchase —
-          which is why the #1 spot is never out of reach.
-        </p>
+        <h2>How it works</h2>
+        <ol className="steps">
+          <li>
+            <strong>Find your city.</strong> Search it or click it on the globe.
+            All {(5000).toLocaleString("en-US")} cities are open — most of them
+            have no #1 yet.
+          </li>
+          <li>
+            <strong>Put your profile on it.</strong> An @handle, a social link,
+            or your own site. No account, no email.
+          </li>
+          <li>
+            <strong>Pay what the spot is worth to you.</strong> The largest
+            live amount in that city is #1 — and the city itself climbs the
+            world league as its people spend.
+          </li>
+          <li>
+            <strong>Watch it burn.</strong> Every payment loses {decayPct}% of
+            its value per day. {centsToUsd(10000)} is worth{" "}
+            {centsToUsd(4783)} after a week. Rank is a running cost, not a
+            purchase — which is why #1 is never out of reach.
+          </li>
+        </ol>
       </section>
 
-      <footer className="foot">
-        <a href="/rules">Rules</a>
-        <span aria-hidden>·</span>
-        <a href="/price">Pricing</a>
-        <span aria-hidden>·</span>
-        <a href="/terms">Terms</a>
-        <span aria-hidden>·</span>
-        <a href="/privacy">Privacy</a>
-        <span aria-hidden>·</span>
-        <a href="/policy">Refunds</a>
-        <span aria-hidden>·</span>
-        <span>{stats.listings} listings</span>
-        <span aria-hidden>·</span>
-        <a
-          href={
-            process.env.NEXT_PUBLIC_STATS_URL ||
-            `https://plausible.io/${new URL(CONFIG.url).hostname}`
-          }
-          target="_blank"
-          rel="noopener"
-        >
-          Live traffic
-        </a>
-      </footer>
+      <Footer listings={stats.listings} />
     </main>
   );
 }

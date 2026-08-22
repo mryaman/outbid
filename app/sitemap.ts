@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { CONFIG } from "@/lib/config";
 import { CATEGORIES } from "@/lib/categories";
+import { topCities } from "@/lib/cities";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
@@ -9,6 +10,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "hourly",
       priority: 1,
     },
+    {
+      url: `${CONFIG.url}/board`,
+      changeFrequency: "hourly",
+      priority: 0.9,
+    },
+    // Şehir sayfaları asıl SEO yüzeyi: "who is #1 in <city>".
+    ...topCities(1200).map((c) => ({
+      url: `${CONFIG.url}/city/${c.id}`,
+      changeFrequency: "hourly" as const,
+      priority: 0.7,
+    })),
     {
       url: `${CONFIG.url}/categories`,
       changeFrequency: "hourly",
