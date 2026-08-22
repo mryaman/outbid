@@ -34,7 +34,7 @@ export default async function CategoryPage({
   const { slug } = await params;
   if (!isValidCategory(slug)) notFound();
 
-  const board = await getBoard(100, slug);
+  const board = await getBoard(100, { category: slug });
   const name = categoryName(slug);
 
   return (
@@ -79,6 +79,7 @@ export default async function CategoryPage({
               row={r}
               nextCents={board[i + 1]?.effective_cents ?? 0}
               canOutbid={CONFIG.phase === "paid"}
+              showCity
             />
           ))
         )}
