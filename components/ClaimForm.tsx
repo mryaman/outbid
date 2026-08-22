@@ -16,6 +16,7 @@ import CitySearch, { type Hit } from "./CitySearch";
 import { dict, localePath, type Locale } from "@/lib/i18n";
 import { CITY } from "@/lib/i18n/city";
 import { FORM } from "@/lib/i18n/forms";
+import { FREE, freeError } from "@/lib/i18n/free";
 
 export default function ClaimForm({
   onPreview,
@@ -33,6 +34,7 @@ export default function ClaimForm({
   const t = dict(locale);
   const f = FORM[locale];
   const c = CITY[locale];
+  const fr = FREE[locale];
 
   const [link, setLink] = useState("");
   const [city, setCity] = useState<Hit | null>(null);
@@ -40,6 +42,9 @@ export default function ClaimForm({
   const [website, setWebsite] = useState(""); // honeypot
   const [state, setState] = useState<"idle" | "sending" | "done">("idle");
   const [error, setError] = useState<string | null>(null);
+  // Seçilen şehirde canlı kayıt yoksa ilk sıra ücretsiz: form ödeme yerine
+  // /api/claim'e gider. Durum şehir seçilince sunucudan sorulur.
+  const [free, setFree] = useState<{ free: boolean; cents: number } | null>(null);
 
   // "Boost" düğmesinden gelen ?bid= önceden doldurma
   useEffect(() => {
@@ -50,8 +55,43 @@ export default function ClaimForm({
   const pick = (h: Hit) => {
     setCity(h);
     setError(null);
+    setFree(null);
     onPreview?.(h.id);
+    fetch(`/api/claim?city=${encodeURIComponent(h.id)}`)
+      .then((r) => r.json())
+      .then((d) => setFree({ free: Boolean(d?.free), cents: Number(d?.cents) || 300 }))
+      .catch(() => setFree({ free: false, cents: 300 }));
   };
+
+  // --- boş şehir: ücretsiz kayıt ---
+  async function submitFree(e: React.FormEvent) {
+    e.preventDefault();
+    if (state === "sending") return;
+    if (!city) { setError(f.pickCityFirst); return; }
+    setState("sending");
+    setError(null);
+    try {
+      const res = await fetch("/api/claim", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ link, website, city: city.id, category: "other" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(freeError(fr, data.code, data.error));
+        // Şehir bu arada dolduysa ödemeli forma düş.
+        if (data.code === "city_taken") setFree({ free: false, cents: 300 });
+        setState("idle");
+        return;
+      }
+      setState("done");
+      setLink("");
+      router.refresh();
+    } catch {
+      setError(f.errNetwork);
+      setState("idle");
+    }
+  }
 
   // --- kuruluş fazı: fetch ile ---
   async function submitFounding(e: React.FormEvent) {
@@ -82,9 +122,14 @@ export default function ClaimForm({
   }
 
   if (state === "done" && city) {
+    const msg = free?.free
+      ? fr.done
+          .replace("{city}", city.name)
+          .replace("{credit}", centsToUsd(free.cents))
+      : f.done.replace("{city}", city.name);
     return (
       <p className="ok" role="status">
-        {f.done.replace("{city}", city.name)}{" "}
+        {msg}{" "}
         <a href={localePath(locale, `/city/${city.id}`)}>{f.seeCity}</a>
       </p>
     );
@@ -113,6 +158,48 @@ export default function ClaimForm({
       )}
     </div>
   );
+
+  // --- boş şehir: ödeme yok, tek adımda ücretsiz kayıt ---
+  if (city && free?.free) {
+    return (
+      <form className="claim claim--free" onSubmit={submitFree} id="bid">
+        <label className="sr-only" htmlFor="claim-link">{t.formLinkPlaceholder}</label>
+        <input
+          id="claim-link"
+          value={link}
+          onChange={(e) => setLink(e.target.value)}
+          placeholder={t.formLinkPlaceholder}
+          autoComplete="off"
+          spellCheck={false}
+          required
+        />
+
+        {cityField}
+
+        <input
+          tabIndex={-1}
+          autoComplete="off"
+          className="hp"
+          aria-hidden="true"
+          value={website}
+          onChange={(e) => setWebsite(e.target.value)}
+        />
+
+        <button type="submit" className="claim__go claim__go--free" disabled={state === "sending"}>
+          {state === "sending" ? fr.sending : fr.submit.replace("{city}", city.name)}
+        </button>
+
+        {error && <p className="err" role="alert">{error}</p>}
+
+        <p className="fine">
+          {fr.fine
+            .replace("{credit}", centsToUsd(free.cents))
+            .replace("{pct}", String(Math.round((1 - CONFIG.decayPerDay) * 100)))
+            .replace("{min}", centsToUsd(CONFIG.minBidCents))}
+        </p>
+      </form>
+    );
+  }
 
   // --- ödemeli faz: düz form POST ---
   if (paid) {
