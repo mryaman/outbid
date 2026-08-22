@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { submitListing } from "@/lib/db";
 import { CONFIG } from "@/lib/config";
 import { normalizeInput } from "@/lib/normalize";
+import { isValidCategory } from "@/lib/categories";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,6 +48,7 @@ export async function POST(req: Request) {
     );
   }
 
+  const cat = String((body as { category?: string }).category ?? "other");
   const result = await submitListing({
     kind: n.kind,
     dedupeKey: n.dedupeKey,
@@ -54,6 +56,7 @@ export async function POST(req: Request) {
     title: n.title,
     iconUrl: n.iconUrl,
     ip: clientIp(req),
+    category: isValidCategory(cat) ? cat : "other",
   });
 
   if (result.error) {
