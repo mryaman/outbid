@@ -100,7 +100,7 @@ export default function BidForm({
           onChange={(e) => setAmount(e.target.value)}
           inputMode="decimal"
           pattern="[0-9]+([.,][0-9]{1,2})?"
-          placeholder={String(minUsd)}
+          placeholder={`min ${minUsd}`}
           required
         />
       </div>

@@ -241,7 +241,7 @@ export default function ClaimForm({
             onChange={(e) => setAmount(e.target.value)}
             inputMode="decimal"
             pattern="[0-9]+([.,][0-9]{1,2})?"
-            placeholder={String(CONFIG.minBidCents / 100)}
+            placeholder={`min ${CONFIG.minBidCents / 100}`}
             required
           />
         </div>
