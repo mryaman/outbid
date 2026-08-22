@@ -68,5 +68,69 @@ export async function GET(req: Request) {
     report.webhookError = String(e);
   }
 
+  // Teşhis: farklı ürün kombinasyonlarını dene, ham API hatasını raporla.
+  // Oluşan test ürünleri hemen silinir.
+  if (url.searchParams.get("test_product") === "1") {
+    const variants: Array<{ label: string; input: Record<string, unknown> }> = [
+      {
+        label: "digital-USD",
+        input: { type: "digital", priceData: { currency: "USD", price: "5.00" } },
+      },
+      {
+        label: "digital-TRY",
+        input: { type: "digital", priceData: { currency: "TRY", price: "5.00" } },
+      },
+      {
+        label: "physical-USD",
+        input: { type: "physical", priceData: { currency: "USD", price: "5.00" } },
+      },
+      {
+        label: "physical-TRY-noimage",
+        input: { type: "physical", priceData: { currency: "TRY", price: "5.00" }, media: undefined },
+      },
+    ];
+    const results: Record<string, unknown> = {};
+    for (const v of variants) {
+      try {
+        const base: Record<string, unknown> = {
+          title: `outbid test ${v.label}`,
+          description: `test ${v.label}`,
+          shippingPayer: "sellerPays",
+          stockQuantity: 1,
+          customListing: true,
+          media: [{ type: "image", url: `${siteUrl()}/og.png`, placement: 1 }],
+          ...v.input,
+        };
+        if (!("media" in v.input && v.input.media === undefined)) {
+          // media stays
+        } else {
+          delete base.media;
+        }
+        const p = await client.request<{ id?: string; url?: string }>("/products", {
+          method: "POST",
+          body: base,
+        });
+        results[v.label] = { ok: true, id: p?.id, url: p?.url };
+        if (p?.id) {
+          try {
+            await client.products.delete(p.id);
+          } catch {
+            /* cleanup best effort */
+          }
+        }
+        break; // ilk başarılı kombinasyon yeterli
+      } catch (e) {
+        const err = e as { message?: string; status?: number; details?: unknown };
+        results[v.label] = {
+          ok: false,
+          message: err.message,
+          status: err.status,
+          details: err.details,
+        };
+      }
+    }
+    report.productTests = results;
+  }
+
   return NextResponse.json(report);
 }
