@@ -1,17 +1,19 @@
 import { NextResponse } from "next/server";
-import { submitListing } from "@/lib/db";
+import { submitListing, ensureCity } from "@/lib/db";
 import { CONFIG } from "@/lib/config";
-import { normalizeInput } from "@/lib/normalize";
+import { normalizeInput, cityDedupeKey } from "@/lib/normalize";
 import { isValidCategory } from "@/lib/categories";
+import { getCity } from "@/lib/cities";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MESSAGES: Record<string, string> = {
   full: "The founding roster is full.",
-  duplicate: "That link is already on the board.",
+  duplicate: "That link already holds a spot in this city.",
   rate_limited: "Too many attempts. Try again in a little while.",
   invalid_kind: "That link isn't valid.",
+  unknown_city: "Pick a city from the list.",
   server_error: "Something went wrong on our end.",
 };
 
@@ -21,7 +23,7 @@ function clientIp(req: Request): string {
 }
 
 export async function POST(req: Request) {
-  let body: { link?: string; website?: string };
+  let body: { link?: string; website?: string; category?: string; city?: string };
   try {
     body = await req.json();
   } catch {
@@ -32,10 +34,13 @@ export async function POST(req: Request) {
   if (body.website) return NextResponse.json({ ok: true });
 
   if (CONFIG.phase !== "founding") {
-    return NextResponse.json(
-      { error: "The founding phase has closed." },
-      { status: 403 }
-    );
+    return NextResponse.json({ error: "The founding phase has closed." }, { status: 403 });
+  }
+
+  // Şehir gömülü listeden doğrulanır: kullanıcı serbest metin gönderemez.
+  const city = getCity(String(body.city ?? ""));
+  if (!city) {
+    return NextResponse.json({ error: MESSAGES.unknown_city }, { status: 400 });
   }
 
   let n;
@@ -48,14 +53,17 @@ export async function POST(req: Request) {
     );
   }
 
-  const cat = String((body as { category?: string }).category ?? "other");
+  await ensureCity(city);
+
+  const cat = String(body.category ?? "other");
   const result = await submitListing({
     kind: n.kind,
-    dedupeKey: n.dedupeKey,
+    dedupeKey: cityDedupeKey(city.id, n.dedupeKey),
     targetUrl: n.targetUrl,
     title: n.title,
     iconUrl: n.iconUrl,
     ip: clientIp(req),
+    cityId: city.id,
     category: isValidCategory(cat) ? cat : "other",
   });
 
