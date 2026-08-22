@@ -142,16 +142,38 @@ uyarı olarak işaretler — kasıtlı, mimarinin kendisi bu.
 
 ---
 
-## Ödemeli faza geçiş
+## Ödeme (Shopier — kurulu)
 
-Sağlayıcı onayı geldiğinde:
+Shopier'in PAT tabanlı modern akışı kullanılıyor (klasik api_pay4 değil):
 
-1. `lib/config.ts` → `phase: "paid"`
-2. `app/api/checkout/route.ts` ekle — **tutarı sunucuda doğrula**, asla
-   client'tan geleni kullanma.
-3. Webhook route'u ekle — imzayı doğrula, `payment_id`'yi `bids` tablosuna
-   yaz. Kayıt **sadece webhook'ta** oluşsun, success sayfasında değil;
-   kullanıcı sekmeyi kapatırsa para gelir kayıt gelmez.
+```
+/api/checkout          teklif tutarında tek seferlik Shopier "ürünü" oluşturur,
+                       pending_payments'a yazar, tarayıcıyı hosted checkout'a
+                       POST eder. Tutar sunucuda doğrulanır (app_config
+                       min/max), bid burada YAZILMAZ.
+/api/shopier/webhook   order.created → HMAC-SHA256 imza doğrulanır, tutar
+                       kontrol edilir, bid SADECE burada yazılır
+                       (bids.payment_id unique → tekrar gönderim zararsız).
+                       Bize ait taşıyıcı ürün silinir; mağazanın gerçek
+                       ürünlerine dokunulmaz.
+/api/shopier/setup     ?key=PAYMENT_RPC_SECRET ile korunan tek seferlik
+                       kurulum/teşhis ucu: PAT'ı test eder, mağaza slug'ını
+                       doğrular, order.created webhook aboneliğini oluşturur
+                       (&create_webhook=1) ve token'ını döndürür.
+```
+
+Gerekli env değişkenleri (Netlify):
+
+| Değişken | Ne |
+|---|---|
+| `SHOPIER_PAT` | Kişisel Erişim Belirteci (panel → Hesap Yönetimi → Kişisel Erişim Anahtarı) |
+| `SHOPIER_SHOP_SLUG` | shopier.com/<slug> mağaza adı (hosted checkout için) |
+| `SHOPIER_WEBHOOK_TOKEN` | webhook imza token'ı — `/api/shopier/setup` çıktısından |
+| `PAYMENT_RPC_SECRET` | Supabase `payment_secrets.rpc_secret` ile aynı değer |
+| `PHASE` | `paid` yapınca ödemeli faz açılır (deploy gerekmez, sadece env) |
+
+Fazı `PHASE=paid` env'i VEYA `lib/config.ts` çevirir. Bid'ler yalnızca
+webhook'ta oluşur; kullanıcı ödeme sonrası sekmeyi kapatsa bile kayıt düşer.
 
 ---
 
