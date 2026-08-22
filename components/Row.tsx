@@ -40,6 +40,9 @@ export default function Row({
   const hrs = nextCents > 0 ? hoursUntilBelow(cents, nextCents) : Infinity;
   const soon = Number.isFinite(hrs) && hrs < 48;
   const platform = platformOf(row.target_url);
+  // Teklif her zaman bir şehre verilir; şehri olmayan eski kayıtta Boost
+  // gidecek bir yer bulamaz — düğmeyi hiç göstermiyoruz.
+  const boostCity = cityId ?? row.city_id;
 
   return (
     <a className="row" href={`/go?id=${row.id}`} rel="nofollow noopener">
@@ -82,7 +85,7 @@ export default function Row({
         {centsToUsd(cents)}
       </span>
 
-      {canOutbid && (
+      {canOutbid && boostCity && (
         <button
           type="button"
           className="outbid-btn"
@@ -91,9 +94,8 @@ export default function Row({
             e.preventDefault();
             e.stopPropagation();
             const prefill = row.kind === "x" ? row.title : row.target_url;
-            const city = cityId ?? row.city_id;
-            const base = city ? `/city/${city}` : "/";
-            window.location.href = `${base}?bid=${encodeURIComponent(prefill)}#bid`;
+            window.location.href =
+              `/city/${boostCity}?bid=${encodeURIComponent(prefill)}#bid`;
           }}
         >
           Boost
