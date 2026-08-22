@@ -68,6 +68,18 @@ export async function GET(req: Request) {
     report.webhookError = String(e);
   }
 
+  // Son 24 saatin siparişleri (ödeme geldi mi teşhisi)
+  if (url.searchParams.get("orders") === "1") {
+    try {
+      report.orders = await client.orders.list({
+        dateStart: new Date(Date.now() - 24 * 3600e3).toISOString().replace(/\.\d+Z$/, "Z"),
+        dateEnd: new Date().toISOString().replace(/\.\d+Z$/, "Z"),
+      });
+    } catch (e) {
+      report.ordersError = String(e);
+    }
+  }
+
   // Mağaza sepetini kapat: taşıyıcı-ürün modelinde sepet birikmesi
   // (terk edilen denemeler) istemiyoruz; her ödeme tek ürün olmalı.
   if (url.searchParams.get("disable_cart") === "1") {
