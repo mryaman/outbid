@@ -59,3 +59,41 @@ export function moneyToCents(s: string | undefined | null): number | null {
   if (!Number.isFinite(n) || n <= 0) return null;
   return Math.round(n * 100);
 }
+
+/**
+ * USD→TRY kuru. Shopier mağazası yalnızca TRY tahsil edebildiği için
+ * teklif USD girilir, tahsilat anlık kurdan TL yapılır.
+ * 30 dk bellek içi cache; kaynak açık ve anahtarsız.
+ */
+let _rate: { value: number; at: number } | null = null;
+
+export async function getUsdTryRate(): Promise<number | null> {
+  if (_rate && Date.now() - _rate.at < 30 * 60_000) return _rate.value;
+  const sources = [
+    async () => {
+      const r = await fetch("https://open.er-api.com/v6/latest/USD", { cache: "no-store" });
+      const d = (await r.json()) as { rates?: { TRY?: number } };
+      return d.rates?.TRY;
+    },
+    async () => {
+      const r = await fetch(
+        "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json",
+        { cache: "no-store" }
+      );
+      const d = (await r.json()) as { usd?: { try?: number } };
+      return d.usd?.try;
+    },
+  ];
+  for (const src of sources) {
+    try {
+      const v = await src();
+      if (typeof v === "number" && v > 1 && v < 1000) {
+        _rate = { value: v, at: Date.now() };
+        return v;
+      }
+    } catch {
+      /* sıradaki kaynak */
+    }
+  }
+  return _rate?.value ?? null;
+}

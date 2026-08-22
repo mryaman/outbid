@@ -167,6 +167,7 @@ export function createPendingPayment(args: {
   title: string;
   iconUrl: string;
   amountCents: number;
+  amountTryCents?: number | null;
   email?: string | null;
   ip: string;
   category?: string;
@@ -185,6 +186,7 @@ export function createPendingPayment(args: {
         p_title: args.title,
         p_icon_url: args.iconUrl,
         p_amount_cents: args.amountCents,
+        p_amount_try_cents: args.amountTryCents ?? null,
         p_email: args.email ?? null,
         p_ip: args.ip,
         p_category: args.category ?? "other",
