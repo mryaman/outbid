@@ -43,7 +43,7 @@ const R = 1;
 const MAP_W = 4;
 const MAP_H = 2;
 /** Harita kamerasının uzaklık aralığı — küçük değer = yakın. */
-const MAP_NEAR = 0.9;
+const MAP_NEAR = 0.25;
 const MAP_FAR = 3.0;
 
 function latLonToVec3(lat: number, lon: number, radius = R): THREE.Vector3 {
@@ -554,7 +554,7 @@ export default function GlobeView({
 
       // Uzakta yalnızca tepe; yakınlaştıkça yazı açılır.
       const zoom = view === "globe"
-        ? Math.min(1, Math.max(0, (4.2 - dist) / (4.2 - 1.55)))
+        ? Math.min(1, Math.max(0, (4.2 - dist) / (4.2 - 1.12)))
         : Math.min(1, Math.max(0, (MAP_FAR - mapZoom) / (MAP_FAR - MAP_NEAR)));
       const maxFull = Math.max(2, Math.round((w / 210) * (0.7 + 1.3 * zoom)));
       const maxMini = Math.max(5, Math.round((w / 78) * (0.7 + 1.5 * zoom)));
@@ -726,7 +726,7 @@ export default function GlobeView({
       if (!e.deltaY) return;
       e.preventDefault();
       if (view === "globe") {
-        dist = Math.max(1.55, Math.min(4.2, dist + e.deltaY * 0.0016));
+        dist = Math.max(1.12, Math.min(4.2, dist + e.deltaY * 0.0016));
       } else {
         mapZoom = Math.max(MAP_NEAR, Math.min(MAP_FAR, mapZoom + e.deltaY * 0.0016));
         clampPan();
