@@ -49,7 +49,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const englishOnly = [
     { p: "/how-it-works", f: "monthly" as const, pr: 0.8 },
     { p: "/faq", f: "monthly" as const, pr: 0.8 },
-    { p: "/vs/outbid-lol", f: "monthly" as const, pr: 0.7 },
+    { p: "/outbid-lol-alternative", f: "weekly" as const, pr: 0.9 },
+    { p: "/vs/outbid-lol", f: "monthly" as const, pr: 0.8 },
     { p: "/about", f: "monthly" as const, pr: 0.5 },
     { p: "/rules", f: "weekly" as const, pr: 0.4 },
     { p: "/price", f: "monthly" as const, pr: 0.4 },

@@ -227,7 +227,10 @@ export default function HowItWorks() {
         <h2>Compared with a permanent bid board</h2>
         <p>
           {t.vsP} A side-by-side breakdown lives on{" "}
-          <a href="/vs/outbid-lol">outbid.love vs outbid.lol</a>, and the{" "}
+          <a href="/vs/outbid-lol">outbid.love vs outbid.lol</a>, the case for
+          switching is on the{" "}
+          <a href="/outbid-lol-alternative">outbid.lol alternative</a> page,
+          and the{" "}
           <a href="/faq">FAQ</a> covers the practical questions about payment,
           moderation and refunds.
         </p>

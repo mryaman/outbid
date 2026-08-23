@@ -197,6 +197,8 @@ export default async function Home() {
         <p>
           <a href="/how-it-works">The decay maths, step by step →</a>
           <span aria-hidden> · </span>
+          <a href="/outbid-lol-alternative">The outbid.lol alternative →</a>
+          <span aria-hidden> · </span>
           <a href="/vs/outbid-lol">outbid.love vs outbid.lol →</a>
           <span aria-hidden> · </span>
           <a href="/board">The world board →</a>

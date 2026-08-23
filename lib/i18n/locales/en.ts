@@ -7,6 +7,9 @@ export const en: Dict = {
   keywords: [
     "pay to rank leaderboard",
     "outbid.lol alternative",
+    "alternative to outbid.lol",
+    "sites like outbid.lol",
+    "outbid.lol competitors",
     "decaying leaderboard",
     "bid for the top spot",
     "buy the number one spot website",

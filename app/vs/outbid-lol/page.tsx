@@ -4,6 +4,7 @@ import { breadcrumbLd, faqLd, organizationLd } from "@/lib/seo";
 import Jsonld from "@/components/Jsonld";
 import Nav from "@/components/Nav";
 import LangSwitcher from "@/components/LangSwitcher";
+import { CITIES } from "@/lib/cities";
 
 const PCT = Math.round((1 - CONFIG.decayPerDay) * 100);
 
@@ -68,13 +69,23 @@ const COMPARISON: { row: string; love: string; lol: string }[] = [
     lol: "Direct listing link",
   },
   {
-    row: "Categories",
-    love: "27, each with its own ranking and its own page",
-    lol: "27",
+    row: "How the board is organised",
+    love: `By city — ${CITIES.length.toLocaleString("en-US")} of them, each with its own #1, its own page and its own place in a world league`,
+    lol: "One global list, split into 27 categories",
+  },
+  {
+    row: "How many #1 positions exist",
+    love: `${CITIES.length.toLocaleString("en-US")} — most of them still unclaimed`,
+    lol: "One overall, plus one per category",
+  },
+  {
+    row: "What you can list",
+    love: "X, TikTok, Instagram, LinkedIn, YouTube, GitHub or any site you own",
+    lol: "A product website or an X handle",
   },
   {
     row: "Languages",
-    love: "12, each with translated pages",
+    love: "18, with translated city pages",
     lol: "English",
   },
 ];
@@ -189,6 +200,12 @@ export default function VsOutbidLol() {
             </div>
           ))}
         </dl>
+
+        <p>
+          <a href="/outbid-lol-alternative">
+            Looking for an outbid.lol alternative? Start here →
+          </a>
+        </p>
 
         <p>
           <a href="/">See what #1 costs right now →</a>

@@ -63,7 +63,9 @@ export default function FaqPage() {
           amounts and currency, and <a href="/policy">refunds</a> covers what
           happens when a payment goes wrong. If your question is about the
           mechanic itself, <a href="/how-it-works">how it works</a> walks through
-          the maths.
+          the maths. Arrived here from a competitor's board? The{" "}
+          <a href="/outbid-lol-alternative">outbid.lol alternative</a> page
+          covers what is different and what it costs today.
         </p>
       </section>
 
