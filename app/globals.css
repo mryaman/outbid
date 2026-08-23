@@ -820,3 +820,17 @@ a.brand { text-decoration: none; color: inherit; }
 .alt-bid[open] > summary::before { content: "− "; }
 .alt-bid > summary:hover { color: var(--ink-2); }
 .alt-bid[open] > summary { margin-bottom: 12px; }
+
+/* Örnek veri uyarısı — yalnızca /globe-demo önizlemesinde. */
+.sample-warn {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.sample-warn strong { color: var(--ink); }
