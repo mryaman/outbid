@@ -587,42 +587,53 @@ export default function GlobeView({
           continue;
         }
 
-        // Kenarda kırpılmasın diye etiketi kadrajın içine çekiyoruz; ama
-        // şehrinden 30 pikselden fazla kopacaksa o kademe iptal, bir alta düşer.
-        const nudged = (wid: number) => {
-          const cx = Math.min(w - 6 - wid / 2, Math.max(6 + wid / 2, x));
-          return Math.abs(cx - x) > 30 ? null : cx;
-        };
+        // Etiket önce şehrinin tepesine oturmayı dener; orası doluysa çevresindeki
+        // sekiz konumu sırayla yoklar. Eskiden tek konum vardı: yakın şehirlerde
+        // (İstanbul–Bursa–Ankara) ilk gelen yeri kapıyor, diğerleri hiç
+        // çizilmiyordu. Hiçbiri tutmazsa bir alt kademeye, o da olmazsa "+N".
+        const ANCHORS: Array<[number, number]> = [
+          [0, 0],      // üstte
+          [0, 1],      // altta
+          [1, 0.5],    // sağda
+          [-1, 0.5],   // solda
+          [1, 0],      // üst-sağ
+          [-1, 0],     // üst-sol
+          [1, 1],      // alt-sağ
+          [-1, 1],     // alt-sol
+        ];
 
         let tier = -1;
         let tx = x;
-        let blocker: Box | null = null;
+        let ty = y;
+        const blockedBy: Box[] = [];
 
-        if (nFull < maxFull) {
-          const cx = nudged(m.w[0]);
-          if (cx !== null) {
-            blocker = hit(cx, y, m.w[0], m.h);
-            if (!blocker) { tier = 0; tx = cx; }
+        const place = (t: number): boolean => {
+          const bwT = m.w[t];
+          const bhT = t === 2 ? m.w[2] : m.h;
+          for (const [ax, ay] of ANCHORS) {
+            const ox = ax * (bwT / 2 + 9);
+            const oy = ay * (bhT + 11);
+            // Kenarda kırpılmasın diye kadraja çekiyoruz; şehrinden 30
+            // pikselden fazla kopacaksa bu konum iptal.
+            const want = x + ox;
+            const cx = Math.min(w - 6 - bwT / 2, Math.max(6 + bwT / 2, want));
+            if (Math.abs(cx - want) > 30) continue;
+            const cy = y + oy;
+            if (cy - bhT < 4 || cy > h - 4) continue;
+            const b = hit(cx, cy, bwT, bhT);
+            if (!b) { tier = t; tx = cx; ty = cy; return true; }
+            if (blockedBy.length === 0) blockedBy.push(b);
           }
-        }
-        if (tier < 0 && nMini < maxMini) {
-          const cx = nudged(m.w[1]);
-          if (cx !== null) {
-            blocker = hit(cx, y, m.w[1], m.h);
-            if (!blocker) { tier = 1; tx = cx; }
-          }
-        }
-        if (tier < 0) {
-          const cx = nudged(m.w[2]);
-          if (cx !== null) {
-            blocker = hit(cx, y, m.w[2], m.w[2]);
-            if (!blocker) { tier = 2; tx = cx; }
-          }
-        }
+          return false;
+        };
+
+        if (nFull < maxFull) place(0);
+        if (tier < 0 && nMini < maxMini) place(1);
+        if (tier < 0) place(2);
 
         if (tier < 0) {
           // Yer yok: yerini kapan işaretin sayacına eklen.
-          if (blocker) blocker.owner.more++;
+          if (blockedBy.length) blockedBy[0].owner.more++;
           setTier(m, -1);
           continue;
         }
@@ -634,11 +645,11 @@ export default function GlobeView({
         const bh2 = tier === 2 ? m.w[2] : m.h;
         boxes.push({
           x0: tx - bw / 2 - GAP, x1: tx + bw / 2 + GAP,
-          y0: y - bh2 - GAP,     y1: y + GAP,
+          y0: ty - bh2 - GAP,    y1: ty + GAP,
           owner: m,
         });
         setTier(m, tier);
-        m.el.style.transform = `translate(-50%, -100%) translate(${tx}px, ${y}px)`;
+        m.el.style.transform = `translate(-50%, -100%) translate(${tx}px, ${ty}px)`;
       }
 
       for (const m of marks) {
