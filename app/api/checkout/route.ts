@@ -100,6 +100,11 @@ export async function POST(req: Request) {
       imageUrl: "https://raw.githubusercontent.com/mryaman/outbid/main/public/og.png",
       customNote: `Your bid is live in ${city.name}: ${siteUrl()}/city/${city.id}`,
       orderId: orderRef,
+      // Shopier ödeme başlatılınca stoğu rezerve ediyor. SDK varsayılanı 1:
+      // kullanıcı karttan vazgeçip geri dönerse ürün "Tükendi" oluyor ve
+      // Shopier onu mağaza köküne atıyor → "Bu mağazada ürün yok" ekranı.
+      // Ürün zaten tek kullanımlık (ödemede webhook siliyor), stok bol olabilir.
+      stockQuantity: 99,
       hostedCheckout: Boolean(process.env.SHOPIER_SHOP_SLUG),
       shopSlug: process.env.SHOPIER_SHOP_SLUG,
     });
@@ -109,6 +114,18 @@ export async function POST(req: Request) {
       e,
       JSON.stringify((e as { details?: unknown })?.details ?? null)
     );
+    return back(city.id, "provider_error", "", lang);
+  }
+
+  // 1b) Ürün satılabilir durumda mı? Değilse Shopier kullanıcıyı boş mağaza
+  //     sayfasına atar; oraya göndermektense hata ile geri dön.
+  if (payment.product?.stockStatus === "outOfStock") {
+    console.error("shopier product created outOfStock", payment.productId);
+    try {
+      await shopierClient().products.delete(payment.productId);
+    } catch {
+      /* best effort */
+    }
     return back(city.id, "provider_error", "", lang);
   }
 

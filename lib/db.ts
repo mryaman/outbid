@@ -357,3 +357,16 @@ export function confirmPaymentByProduct(args: {
     { error: "server_error" }
   );
 }
+
+/**
+ * Son 3 saatte açılmış, hâlâ ödenmemiş checkout'ların Shopier ürün id'leri.
+ * Mağaza temizliği bunlara dokunmamalı — kullanıcı hâlâ kart ekranında olabilir.
+ */
+export async function openPaymentProducts(): Promise<string[]> {
+  const rows = await rest<string[]>(
+    "rpc/open_payment_products",
+    { method: "POST", body: JSON.stringify({ p_secret: rpcSecret() }) },
+    []
+  );
+  return Array.isArray(rows) ? rows.filter(Boolean) : [];
+}

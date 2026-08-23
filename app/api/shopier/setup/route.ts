@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { shopierClient, siteUrl } from "@/lib/shopier";
+import { CONFIG } from "@/lib/config";
+import { confirmPaymentByProduct, openPaymentProducts } from "@/lib/db";
+import { shopierClient, siteUrl, moneyToCents } from "@/lib/shopier";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -8,10 +10,18 @@ export const dynamic = "force-dynamic";
  * Tek seferlik kurulum/teşhis ucu. PAYMENT_RPC_SECRET ile korunur:
  *
  *   GET /api/shopier/setup?key=<PAYMENT_RPC_SECRET>            → durum raporu
- *   GET /api/shopier/setup?key=...&create_webhook=1            → order.created
- *       aboneliği yoksa oluşturur; yanıtta webhook token'ı (varsa) döner.
+ *       (taşıyıcı ürün sayısı + kaçı "Tükendi" dâhil)
+ *   &create_webhook=1    order.created aboneliği yoksa oluşturur; yanıtta token.
+ *   &orders=1            son 24 saatin ham sipariş listesi
+ *   &products=1          taşıyıcı ürünlerin id/başlık/stok dökümü
+ *   &sync_orders=1[&hours=N]  kaçan webhook telafisi: ödenmiş siparişleri
+ *                        yeniden onaylatır (işlenmişler duplicate döner)
+ *   &cleanup_products=1  terk edilmiş taşıyıcı ürünleri siler (son 3 saatteki
+ *                        açık checkout'ların ürünlerine dokunmaz)
+ *   &enable_cart=1 / &disable_cart=1   mağaza sepeti. Hosted checkout sepet
+ *                        adımını kullandığı için sepet AÇIK olmalı.
  *
- * Dönen webhook token'ı Netlify'da SHOPIER_WEBHOOK_TOKEN olarak kaydedilmeli.
+ * Dönen webhook token'ı Vercel'de SHOPIER_WEBHOOK_TOKEN olarak kaydedilmeli.
  */
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -80,8 +90,10 @@ export async function GET(req: Request) {
     }
   }
 
-  // Mağaza sepetini kapat: taşıyıcı-ürün modelinde sepet birikmesi
-  // (terk edilen denemeler) istemiyoruz; her ödeme tek ürün olmalı.
+  // Sepet ayarı. DİKKAT: hosted checkout tarayıcıyı
+  // shopier.com/s/shipping/<slug> adresine POST'luyor — bu sepet adımıdır.
+  // Sepet kapalıyken o POST tutmaz, kullanıcı boş mağaza sayfasına düşer.
+  // disable_cart yalnızca hosted checkout kapalıyken mantıklı.
   if (url.searchParams.get("disable_cart") === "1") {
     try {
       report.cartUpdate = await client.shop.updateSettings({ cart: false });
@@ -89,29 +101,91 @@ export async function GET(req: Request) {
       report.cartUpdateError = String(e);
     }
   }
+  if (url.searchParams.get("enable_cart") === "1") {
+    try {
+      report.cartUpdate = await client.shop.updateSettings({ cart: true });
+    } catch (e) {
+      report.cartUpdateError = String(e);
+    }
+  }
 
-  // Temizlik: terk edilen taşıyıcı ürünleri sil ("outbid.love bid" başlıklı,
-  // bekleyen ödemesi olmayanlar dahil hepsi — aktif checkout'lar yeni ürün açar).
+  // Taşıyıcı ürünlerin dökümü: kaç tane birikmiş, stok durumları ne.
+  // ("Tükendi" olan bir ürün checkout'u boş mağaza sayfasına atar.)
+  const carrierPrefix = CONFIG.siteName; // "outbid.love — <başlık> in <şehir>"
+  let carriers: Array<{ id?: string; title?: string; stockStatus?: string }> = [];
+  try {
+    const all = await client.products.list({ limit: 100 });
+    carriers = (all ?? []).filter((p) =>
+      (p as { title?: string }).title?.startsWith(carrierPrefix)
+    );
+    report.carrierCount = carriers.length;
+    report.carrierOutOfStock = carriers.filter(
+      (p) => p.stockStatus === "outOfStock"
+    ).length;
+    if (url.searchParams.get("products") === "1") {
+      report.carriers = carriers.map((p) => ({
+        id: p.id,
+        title: p.title,
+        stockStatus: p.stockStatus,
+      }));
+    }
+  } catch (e) {
+    report.productsError = String(e);
+  }
+
+  // Temizlik: terk edilmiş taşıyıcı ürünleri sil. Son 3 saatte açılmış ve hâlâ
+  // ödenmemiş checkout'ların ürünleri korunur — kullanıcı kart ekranında olabilir.
   if (url.searchParams.get("cleanup_products") === "1") {
     try {
-      const all = await client.products.list({ limit: 100 });
-      const carriers = (all ?? []).filter((p) =>
-        (p as { title?: string }).title?.startsWith("outbid.love bid")
-      );
+      const keep = new Set(await openPaymentProducts());
       const deleted: string[] = [];
+      const kept: string[] = [];
       for (const p of carriers) {
-        const id = (p as { id?: string }).id;
-        if (!id) continue;
+        if (!p.id) continue;
+        if (keep.has(p.id)) {
+          kept.push(p.id);
+          continue;
+        }
         try {
-          await client.products.delete(id);
-          deleted.push(id);
+          await client.products.delete(p.id);
+          deleted.push(p.id);
         } catch {
           /* tek tek geç */
         }
       }
       report.cleanupDeleted = deleted;
+      report.cleanupKept = kept;
     } catch (e) {
       report.cleanupError = String(e);
+    }
+  }
+
+  // Kaçan webhook telafisi: son N saatin ödenmiş siparişlerini tek tek
+  // confirm_payment_by_product'a ver. Zaten işlenmişler duplicate döner.
+  if (url.searchParams.get("sync_orders") === "1") {
+    const hours = Math.min(Math.max(Number(url.searchParams.get("hours")) || 24, 1), 720);
+    const synced: Array<Record<string, unknown>> = [];
+    try {
+      const orders = await client.orders.list({
+        dateStart: new Date(Date.now() - hours * 3600e3).toISOString().replace(/\.\d+Z$/, "Z"),
+        dateEnd: new Date().toISOString().replace(/\.\d+Z$/, "Z"),
+      });
+      for (const order of orders ?? []) {
+        if (order.paymentStatus && order.paymentStatus !== "paid") continue;
+        for (const li of order.lineItems ?? []) {
+          if (!li.productId) continue;
+          const res = await confirmPaymentByProduct({
+            productId: li.productId,
+            paymentId: order.id,
+            paidCents: moneyToCents(li.total) ?? moneyToCents(li.price) ?? null,
+          });
+          synced.push({ order: order.id, product: li.productId, ...res });
+        }
+      }
+      report.syncedOrders = synced;
+    } catch (e) {
+      report.syncError = String(e);
+      report.syncedOrders = synced;
     }
   }
 
