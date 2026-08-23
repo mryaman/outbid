@@ -568,14 +568,22 @@ a.brand { text-decoration: none; color: inherit; }
 .plat--youtube { background: #ff0000; color: #fff; }
 .plat--github { background: #24292f; color: #fff; }
 
-.icon--badge {
+/* Yuvarlak ikon = platform amblemi. Profil fotoğrafı kullanılmıyor. */
+.plogo {
   display: grid; place-items: center;
   width: 40px; height: 40px; border-radius: 10px;
-  font-size: 13px; font-weight: 700; letter-spacing: -0.02em;
-  background: var(--surface-2); color: var(--ink-2);
+  flex: 0 0 40px;
+  color: #fff;
+  background: var(--surface-2);
 }
-.icon--tiktok { background: #010101; color: #25f4ee; }
-.icon--linkedin { background: #0a66c2; color: #fff; }
+.plogo svg { display: block; }
+.plogo--x { background: #0b0b0f; }
+.plogo--instagram { background: linear-gradient(135deg, #f9ce34 5%, #ee2a7b 50%, #6228d7 95%); }
+.plogo--tiktok { background: #010101; }
+.plogo--linkedin { background: #0a66c2; }
+.plogo--youtube { background: #ff0000; }
+.plogo--github { background: #24292f; }
+.plogo--web { background: var(--surface-2); color: var(--ink-2); }
 
 .citychip {
   padding: 1px 7px; border-radius: 999px;

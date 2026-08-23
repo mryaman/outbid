@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { CONFIG, centsToUsd, hoursUntilBelow, humanHours } from "@/lib/config";
-import { platformOf, PLATFORM_LABEL } from "@/lib/normalize";
+import { platformOf } from "@/lib/normalize";
+import PlatformIcon from "./PlatformIcon";
 import type { Row as R } from "@/lib/db";
 import { ROW_LABELS, type RowLabels } from "@/lib/i18n/row";
 
@@ -59,20 +60,10 @@ export default function Row({
     <a className="row" href={`/go?id=${row.id}`} rel="nofollow noopener">
       <span className="rank">#{rank}</span>
 
-      {row.icon_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img className="icon" src={row.icon_url} alt="" width={40} height={40} loading="lazy" />
-      ) : (
-        <span className={`icon icon--badge icon--${platform}`} aria-hidden>
-          {PLATFORM_LABEL[platform].slice(0, 2)}
-        </span>
-      )}
+      <PlatformIcon platform={platform} />
 
       <span className="meta">
-        <span className="title">
-          {row.title}
-          <span className={`plat plat--${platform}`}>{PLATFORM_LABEL[platform]}</span>
-        </span>
+        <span className="title">{row.title}</span>
         <span className="sub">
           {showCity && row.city_name && (
             <>
