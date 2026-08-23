@@ -15,6 +15,14 @@ export const CONFIG = {
   foundingSlots: 30,
   foundingCents: 1000, // herkese $10'lık çürüyen kredi
 
+  // --- Şehrin ilk kaydı ücretsiz ---
+  // Bir şehirde canlı kayıt yoksa o şehri açan ilk kişi ödemeden giriyor.
+  // Sembolik tutar: min teklif $5 olduğu için ilk ödeyen anında geçer;
+  // amaç boş şehri doldurmak, bedava #1 dağıtmak değil.
+  // DB'deki app_config.free_city_cents asıl otorite — ikisini birlikte değiştir.
+  freeFirstCents: 300, // $3 → %10/gün çürümeyle ~10 gün board'da kalır
+  freeFirstPerIpHours: 24,
+
   // --- Ödemeli faz ---
   // DB'deki app_config (min_bid_cents / max_bid_cents) asıl otorite;
   // buradakiler arayüz gösterimi için. İkisini birlikte değiştir.

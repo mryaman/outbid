@@ -198,6 +198,56 @@ export function submitListing(args: {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Şehrin ilk kaydı ücretsiz
+// Boş bir şehri açan ilk kişi ödemeden giriyor; sembolik çürüyen kredi.
+// Sınırlar DB'de: profil başına toplam 1, IP başına 24 saatte 1.
+// ---------------------------------------------------------------------------
+
+export type FreeClaimResult = { id?: string; cents?: number; error?: string };
+
+export function claimFreeCity(args: {
+  kind: string;
+  identityKey: string;
+  dedupeKey: string;
+  targetUrl: string;
+  title: string;
+  iconUrl: string;
+  ip: string;
+  cityId: string;
+  category?: string;
+}) {
+  return rest<FreeClaimResult>(
+    "rpc/claim_free_city",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        p_secret: rpcSecret(),
+        p_kind: args.kind,
+        p_identity_key: args.identityKey,
+        p_dedupe_key: args.dedupeKey,
+        p_target_url: args.targetUrl,
+        p_title: args.title,
+        p_icon_url: args.iconUrl,
+        p_ip: args.ip,
+        p_city_id: args.cityId,
+        p_category: args.category ?? "other",
+      }),
+    },
+    { error: "server_error" }
+  );
+}
+
+/** "Bu şehir şu an bedava alınabilir mi?" — ana sayfa formu için. */
+export function cityFreeStatus(cityId: string) {
+  return rest<{ free: boolean; cents: number }>(
+    "rpc/city_free",
+    { method: "POST", body: JSON.stringify({ p_city_id: cityId }), revalidate: 15 },
+    // Ulaşılamıyorsa bedava TEKLİF ETME: yanlış vaat vermektense ödemeli akış.
+    { free: false, cents: 300 }
+  );
+}
+
 /** Hedefi sayaç artırmadan okur — bot ve link önizlemeleri için. */
 export async function getTarget(id: string): Promise<string | null> {
   const rows = await rest<{ target_url: string }[]>(
