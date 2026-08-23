@@ -84,6 +84,9 @@ export type LeagueRow = {
   top_listing_id: string | null;
   top_kind: string | null;
   league_rank: number;
+  /** #1 kaydın hedef adresi. Platform amblemi bundan türetiliyor
+   *  (`platformOf`); city_league view'ında en son kolon. */
+  top_target_url: string | null;
 };
 
 export type Stats = {

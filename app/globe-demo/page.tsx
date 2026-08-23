@@ -4,6 +4,7 @@ import Row from "@/components/Row";
 import { topCities } from "@/lib/cities";
 import { centsToUsd } from "@/lib/config";
 import type { GlobeCity } from "@/components/GlobeView";
+import type { Platform } from "@/lib/normalize";
 import type { LeagueRow, Row as R } from "@/lib/db";
 
 /**
@@ -59,12 +60,47 @@ const TOPS = [
   "@ornek.eylul",
 ];
 
+// Önizlemede amblemler görünsün diye — canlıda platform top_target_url'den gelir.
+const PLATFORMS: Platform[] = ["x", "instagram", "tiktok", "linkedin", "youtube", "github", "web"];
+
 const ISO = "2026-08-20T12:00:00.000Z";
 
-export default function GlobeDemo() {
-  const active: GlobeCity[] = SEED.map(([id, name, country, cc, lat, lon, cents, listings], i) => ({
+/**
+ * Yoğunluk testi: `/globe-demo?cities=120` lige uydurma şehir ekler.
+ * Küre etiketleri kalabalıkta ne yapıyor — 3 şehirle görünmeyen çakışma
+ * 120 şehirle görünüyor. Tutarlar üstel düşüyor, gerçek lig de öyle.
+ */
+function densify(base: GlobeCity[], want: number): GlobeCity[] {
+  const have = new Set(base.map((c) => c.id));
+  const extra = topCities(600)
+    .filter((c) => !have.has(c.id))
+    .slice(0, Math.max(0, want - base.length));
+  const last = base[base.length - 1]?.cents ?? 4000;
+  return [
+    ...base,
+    ...extra.map((c, i) => ({
+      id: c.id, name: c.name, country: c.country, cc: c.cc, lat: c.lat, lon: c.lon,
+      cents: Math.max(200, Math.round(last * Math.pow(0.965, i + 1))),
+      listings: 1 + (i % 3),
+      rank: base.length + i + 1,
+      platform: PLATFORMS[(i + 3) % PLATFORMS.length],
+    })),
+  ];
+}
+
+export default async function GlobeDemo({
+  searchParams,
+}: {
+  searchParams: Promise<{ cities?: string }>;
+}) {
+  const want = Math.min(400, Math.max(0, Number((await searchParams).cities) || 0));
+
+  const seeded: GlobeCity[] = SEED.map(([id, name, country, cc, lat, lon, cents, listings], i) => ({
     id, name, country, cc, lat, lon, cents, listings, rank: i + 1,
+    platform: PLATFORMS[i % PLATFORMS.length],
+    top: TOPS[i] ?? BOARD[0][1],
   }));
+  const active: GlobeCity[] = want > seeded.length ? densify(seeded, want) : seeded;
   const ids = new Set(active.map((a) => a.id));
   const cities = [
     ...active,
@@ -79,6 +115,7 @@ export default function GlobeDemo() {
     listings, effective_cents: cents, lifetime_cents: cents,
     last_bid_at: ISO,
     top_title: TOPS[i] ?? BOARD[0][1], top_icon_url: null, top_listing_id: null, top_kind: "x",
+    top_target_url: `https://x.com/${(TOPS[i] ?? BOARD[0][1]).replace("@", "")}`,
     league_rank: i + 1,
   }));
 

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getCityLeague, getStats } from "@/lib/db";
+import { platformOf } from "@/lib/normalize";
 import { topCities, CITIES } from "@/lib/cities";
 import { CONFIG, centsToUsd } from "@/lib/config";
 import { CATEGORIES } from "@/lib/categories";
@@ -66,6 +67,9 @@ export default async function Home() {
       cents: l.effective_cents,
       listings: l.listings,
       rank: l.league_rank,
+      // Küredeki işaret o şehrin #1'inin amblemini taşıyor.
+      platform: l.top_target_url ? platformOf(l.top_target_url) : undefined,
+      top: l.top_title,
     })),
     ...topCities(240)
       .filter((x) => !activeIds.has(x.id))

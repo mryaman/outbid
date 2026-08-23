@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getCityBoard, getCityLeague } from "@/lib/db";
+import { platformOf } from "@/lib/normalize";
 import { getCity, flagOf, topCities, CITIES } from "@/lib/cities";
 import { altLanguages, dict, fill } from "@/lib/i18n";
 import { CITY } from "@/lib/i18n/city";
@@ -92,6 +93,9 @@ export default async function CityPage({
       cents: l.effective_cents,
       listings: l.listings,
       rank: l.league_rank,
+      // Küredeki işaret o şehrin #1'inin amblemini taşıyor.
+      platform: l.top_target_url ? platformOf(l.top_target_url) : undefined,
+      top: l.top_title,
     })),
     ...(mine
       ? []

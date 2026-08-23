@@ -416,7 +416,8 @@ a.brand { text-decoration: none; color: inherit; }
   pointer-events: none;
 }
 
-.globe__modes {
+.globe__modes,
+.globe__views {
   position: absolute; right: 12px; top: 12px;
   display: flex; gap: 4px;
   padding: 4px;
@@ -426,7 +427,11 @@ a.brand { text-decoration: none; color: inherit; }
   backdrop-filter: blur(8px);
 }
 
-.globe__modes button {
+/* Küre ⇄ harita solda, ışık modu sağda. */
+.globe__views { right: auto; left: 12px; }
+
+.globe__modes button,
+.globe__views button {
   appearance: none; border: 0; cursor: pointer;
   background: transparent;
   color: #93a2c4;
@@ -436,7 +441,8 @@ a.brand { text-decoration: none; color: inherit; }
   line-height: 1;
 }
 
-.globe__modes button.is-on {
+.globe__modes button.is-on,
+.globe__views button.is-on {
   background: rgba(255, 255, 255, 0.12);
   color: #fff;
 }
@@ -607,25 +613,78 @@ a.brand { text-decoration: none; color: inherit; }
 
 .globe__labels { position: absolute; inset: 0; pointer-events: none; }
 
-.globe__label {
+/* Üç kademe: tam (bayrak + ad + tutar) → mini (bayrak + tutar) → nokta.
+   Kademeyi GlobeView her karede çakışmaya göre seçiyor; buradaki iş yalnızca
+   her kademenin nasıl göründüğü. */
+
+.globe__mark {
   position: absolute; top: 0; left: 0;
-  display: flex; align-items: baseline; gap: 7px;
+  display: flex; align-items: center; gap: 6px;
   padding: 4px 9px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 999px;
   background: rgba(8, 11, 20, 0.66);
   backdrop-filter: blur(6px);
   color: #f4f7ff;
-  font: inherit; font-size: 12px; line-height: 1.2;
+  font: inherit; font-size: 12px; line-height: 1.25;
   white-space: nowrap;
   cursor: pointer;
-  transition: opacity 0.25s ease;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
 }
-.globe__label b { font-weight: 600; }
-.globe__label i { font-style: normal; color: #ff9dbb; font-variant-numeric: tabular-nums; }
-.globe__label.is-top { border-color: rgba(255, 194, 71, 0.55); }
-.globe__label.is-top i { color: #ffc247; }
-.globe__label:hover { background: rgba(20, 26, 44, 0.9); }
+.globe__mark b { font-weight: 600; }
+.globe__mark i { font-style: normal; color: #ff9dbb; font-variant-numeric: tabular-nums; }
+.globe__mark u { text-decoration: none; font-size: 10.5px; color: #9fb0d4; }
+.globe__mark u:empty { display: none; }
+
+/* Amblem — şehrin #1'inin platformu */
+.globe__mark .gm-logo {
+  display: block; flex: none;
+  width: 14px; height: 14px;
+  color: #eaf0ff;
+}
+.globe__mark .gm-logo svg { display: block; }
+
+/* Amblem markanın rengiyle boyanıyor — dolu rozet 12 pikselde bulanıklaşıyor,
+   tek renk çizim okunuyor. NOT: buradaki sınıflar bilerek `.plogo--*`
+   DEĞİL; o kurallar 40 piksellik satır rozeti için ve arka plan boyuyor. */
+.globe__mark .gm-logo--instagram { color: #f7669e; }
+.globe__mark .gm-logo--youtube   { color: #ff5252; }
+.globe__mark .gm-logo--linkedin  { color: #59a5f5; }
+.globe__mark .gm-logo--tiktok    { color: #6ef2e6; }
+.globe__mark .gm-logo--github    { color: #d8dee9; }
+.globe__mark .gm-logo--x         { color: #ffffff; }
+.globe__mark .gm-logo--web       { color: #9fb6e0; }
+
+/* Ölçüm karesi — genişlikler okunurken görünmesin. */
+.globe__mark.is-measuring { visibility: hidden; transition: none; }
+
+.globe__mark.is-full,
+.globe__mark.is-mini,
+.globe__mark.is-dot { opacity: 1; pointer-events: auto; }
+
+/* mini — ad düşer, kutu ~3× daralır */
+.globe__mark.is-mini b { display: none; }
+
+/* nokta — yalnızca amblem; ad ve tutar title'da kalır */
+.globe__mark.is-dot {
+  gap: 0; padding: 3px;
+  border-radius: 6px;
+  opacity: 0.88;
+}
+.globe__mark.is-dot b,
+.globe__mark.is-dot i { display: none; }
+.globe__mark.is-dot .gm-logo { width: 12px; height: 12px; }
+.globe__mark.is-dot u {
+  position: absolute; left: 50%; top: -3px;
+  transform: translate(-50%, -100%);
+}
+.globe__mark.is-dot:hover { opacity: 1; }
+
+.globe__mark.is-top { border-color: rgba(255, 194, 71, 0.55); }
+.globe__mark.is-top i { color: #ffc247; }
+.globe__mark:hover { background: rgba(20, 26, 44, 0.92); z-index: 2; }
 
 /* ---------- ana sayfa teklif formu (link + şehir + tutar) ---------- */
 

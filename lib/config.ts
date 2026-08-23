@@ -20,14 +20,20 @@ export const CONFIG = {
   // Sembolik tutar: min teklif $5 olduğu için ilk ödeyen anında geçer;
   // amaç boş şehri doldurmak, bedava #1 dağıtmak değil.
   // DB'deki app_config.free_city_cents asıl otorite — ikisini birlikte değiştir.
-  freeFirstCents: 300, // $3 → %10/gün çürümeyle ~10 gün board'da kalır
+  // DB'deki app_config.free_city_cents ile AYNI olmalı — burası sadece gösterim
+  // (FreeClaimForm "credit" rozeti ve /api/claim fallback'i). 300 yazıyordu ama
+  // DB $2 veriyordu: form "$3 bedava" deyip $2 yazıyordu.
+  freeFirstCents: 200, // $2 → %10/gün çürümeyle ~7 gün board'da kalır
   freeFirstPerIpHours: 24,
 
   // --- Ödemeli faz ---
   // DB'deki app_config (min_bid_cents / max_bid_cents) asıl otorite;
   // buradakiler arayüz gösterimi için. İkisini birlikte değiştir.
-  minBidCents: 500,    // $5 — outbid.lol ile aynı giriş eşiği
-  stepCents: 500,      // $5
+  // $3: ücretsiz şehir hakkının ($2) kesin üstünde olmalı — leaderboard
+  // eşitliği `created_at asc` ile bozuluyor, yani $2 ödeyen bedava kaydı
+  // geçemezdi. Shopier komisyonu ($3'te ~%6) bu tutarda hâlâ sorun değil.
+  minBidCents: 300,    // $3
+  stepCents: 100,      // $1 (şu an hiçbir yerde kullanılmıyor)
   maxBidCents: 500000,
 
   // --- Çürüme ---
